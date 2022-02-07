@@ -1,8 +1,12 @@
-# MidiDorians
-
-<img src="mididorians.png" alt="Image of MidiDorians" width="400">
+# ChordDrops
 
 A browser based MIDI game to practice playing chords on a piano. Play the target chord before it hits the bottom of the screen.
+
+Fork of https://github.com/adgad/mididorians with reskin and added instrument sounds.
+
+## Dependencies
+
+Download tonejs-instruments from https://github.com/nbrosowsky/tonejs-instruments and store copy in `/static` folder.
 
 ## Development
 
