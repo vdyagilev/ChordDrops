@@ -1,7 +1,7 @@
 import { Midi } from '@tonaljs/tonal';
 import * as Tone from 'tone';
 
-import { SampleLibrary } from '../tonejs-instruments/Tonejs-Instruments';
+import { SampleLibrary } from '../static/tonejs-instruments/Tonejs-Instruments';
 
 export default class Piano {
 	constructor() {
@@ -79,8 +79,12 @@ export default class Piano {
 			sharps: true,
 		});
 
-		this.instrumentCurrent.triggerRelease(noteName, Tone.now());
-		// this.synth.triggerRelease(noteName, Tone.now());
+		// stop all sounds
+		for (let i=0; i<this.instruments.length; i++) {
+			const inst = this.instruments[i]
+			this.samples[inst].triggerRelease(noteName, Tone.now());
+		}
+			// this.synth.triggerRelease(noteName, Tone.now());
 
 		this.display
 			.querySelector(`[data-note="${noteClass}"]`)

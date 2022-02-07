@@ -55668,7 +55668,7 @@ const Buffers = _ToneAudioBuffers.ToneAudioBuffers;
 exports.Buffers = Buffers;
 const BufferSource = _ToneBufferSource.ToneBufferSource;
 exports.BufferSource = BufferSource;
-},{"./core/Global":"node_modules/tone/build/esm/core/Global.js","./classes":"node_modules/tone/build/esm/classes.js","./version":"node_modules/tone/build/esm/version.js","./core/context/ToneAudioBuffer":"node_modules/tone/build/esm/core/context/ToneAudioBuffer.js","./core/context/AudioContext":"node_modules/tone/build/esm/core/context/AudioContext.js","./core/context/ToneAudioBuffers":"node_modules/tone/build/esm/core/context/ToneAudioBuffers.js","./source/buffer/ToneBufferSource":"node_modules/tone/build/esm/source/buffer/ToneBufferSource.js"}],"tonejs-instruments/Tonejs-Instruments.js":[function(require,module,exports) {
+},{"./core/Global":"node_modules/tone/build/esm/core/Global.js","./classes":"node_modules/tone/build/esm/classes.js","./version":"node_modules/tone/build/esm/version.js","./core/context/ToneAudioBuffer":"node_modules/tone/build/esm/core/context/ToneAudioBuffer.js","./core/context/AudioContext":"node_modules/tone/build/esm/core/context/AudioContext.js","./core/context/ToneAudioBuffers":"node_modules/tone/build/esm/core/context/ToneAudioBuffers.js","./source/buffer/ToneBufferSource":"node_modules/tone/build/esm/source/buffer/ToneBufferSource.js"}],"static/tonejs-instruments/Tonejs-Instruments.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -56288,7 +56288,7 @@ var _tonal = require("@tonaljs/tonal");
 
 var Tone = _interopRequireWildcard(require("tone"));
 
-var _TonejsInstruments = require("../tonejs-instruments/Tonejs-Instruments");
+var _TonejsInstruments = require("../static/tonejs-instruments/Tonejs-Instruments");
 
 function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function () { return cache; }; return cache; }
 
@@ -56361,9 +56361,14 @@ class Piano {
     const noteClass = _tonal.Midi.midiToNoteName(note, {
       pitchClass: true,
       sharps: true
-    });
+    }); // stop all sounds
 
-    this.instrumentCurrent.triggerRelease(noteName, Tone.now()); // this.synth.triggerRelease(noteName, Tone.now());
+
+    for (let i = 0; i < this.instruments.length; i++) {
+      const inst = this.instruments[i];
+      this.samples[inst].triggerRelease(noteName, Tone.now());
+    } // this.synth.triggerRelease(noteName, Tone.now());
+
 
     this.display.querySelector("[data-note=\"".concat(noteClass, "\"]")).classList.remove('pressed');
   }
@@ -56371,7 +56376,7 @@ class Piano {
 }
 
 exports.default = Piano;
-},{"@tonaljs/tonal":"node_modules/@tonaljs/tonal/dist/index.es.js","tone":"node_modules/tone/build/esm/index.js","../tonejs-instruments/Tonejs-Instruments":"tonejs-instruments/Tonejs-Instruments.js"}],"js/Target.js":[function(require,module,exports) {
+},{"@tonaljs/tonal":"node_modules/@tonaljs/tonal/dist/index.es.js","tone":"node_modules/tone/build/esm/index.js","../static/tonejs-instruments/Tonejs-Instruments":"static/tonejs-instruments/Tonejs-Instruments.js"}],"js/Target.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -56573,6 +56578,7 @@ class Game {
     this.gameLoop = null; // store last target for displaying in game over
 
     this.lastTarget = null;
+    this.count = 0;
   }
 
   start() {
@@ -56636,9 +56642,7 @@ class Game {
   incrementLevel() {
     this.level++;
     this.els.level.textContent = this.level;
-    this.createTargetRate = this.createTargetRate * 0.9; // change instrument sound
-
-    this.piano.instrumentCurrent = this.piano.getRandomInstrument();
+    this.createTargetRate = this.createTargetRate * 0.9;
   }
 
   resetLevel() {
@@ -56704,6 +56708,18 @@ class Game {
     if (!(wasHit || this.settings.inversions && inversionHit) && notes.length > 0 && this.score > 0) {
       this.score--;
       this.els.score.textContent = this.score;
+    } // update instrument sound 
+
+
+    const switchEvery = 7;
+
+    if (this.count != 0 && this.count % switchEvery == 0) {
+      this.piano.instrumentCurrent = this.piano.getRandomInstrument();
+    }
+
+    if (notes.length > 0 || chords.length > 0) {
+      // increment on valid input
+      this.count++;
     }
   }
 
@@ -56738,7 +56754,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "64521" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "60255" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

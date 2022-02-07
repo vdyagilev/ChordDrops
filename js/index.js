@@ -27,6 +27,8 @@ class Game {
 
 		// store last target for displaying in game over
 		this.lastTarget = null
+
+		this.count = 0
 	}
 
 	start() {
@@ -87,9 +89,6 @@ class Game {
 		this.level++;
 		this.els.level.textContent = this.level;
 		this.createTargetRate = this.createTargetRate * 0.9;
-
-		// change instrument sound
-		this.piano.instrumentCurrent = this.piano.getRandomInstrument()
 	}
 
 	resetLevel() {
@@ -158,6 +157,16 @@ class Game {
 		if (!(wasHit || (this.settings.inversions && inversionHit)) && notes.length > 0 && this.score > 0) {
 			this.score--;
 			this.els.score.textContent = this.score;
+		}
+		
+		// update instrument sound 
+		const switchEvery = 7
+		if (this.count != 0 && this.count % switchEvery == 0) {
+			this.piano.instrumentCurrent = this.piano.getRandomInstrument()
+		} 
+		if (notes.length >0 || chords.length > 0) {
+			// increment on valid input
+			this.count++
 		}
 		
 	}

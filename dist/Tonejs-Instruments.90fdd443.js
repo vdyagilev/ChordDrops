@@ -51427,7 +51427,7 @@ const Buffers = _ToneAudioBuffers.ToneAudioBuffers;
 exports.Buffers = Buffers;
 const BufferSource = _ToneBufferSource.ToneBufferSource;
 exports.BufferSource = BufferSource;
-},{"./core/Global":"node_modules/tone/build/esm/core/Global.js","./classes":"node_modules/tone/build/esm/classes.js","./version":"node_modules/tone/build/esm/version.js","./core/context/ToneAudioBuffer":"node_modules/tone/build/esm/core/context/ToneAudioBuffer.js","./core/context/AudioContext":"node_modules/tone/build/esm/core/context/AudioContext.js","./core/context/ToneAudioBuffers":"node_modules/tone/build/esm/core/context/ToneAudioBuffers.js","./source/buffer/ToneBufferSource":"node_modules/tone/build/esm/source/buffer/ToneBufferSource.js"}],"tonejs-instruments/Tonejs-Instruments.js":[function(require,module,exports) {
+},{"./core/Global":"node_modules/tone/build/esm/core/Global.js","./classes":"node_modules/tone/build/esm/classes.js","./version":"node_modules/tone/build/esm/version.js","./core/context/ToneAudioBuffer":"node_modules/tone/build/esm/core/context/ToneAudioBuffer.js","./core/context/AudioContext":"node_modules/tone/build/esm/core/context/AudioContext.js","./core/context/ToneAudioBuffers":"node_modules/tone/build/esm/core/context/ToneAudioBuffers.js","./source/buffer/ToneBufferSource":"node_modules/tone/build/esm/source/buffer/ToneBufferSource.js"}],"static/tonejs-instruments/Tonejs-Instruments.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -52063,7 +52063,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "57420" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "60255" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
@@ -52239,5 +52239,5 @@ function hmrAcceptRun(bundle, id) {
     return true;
   }
 }
-},{}]},{},["node_modules/parcel-bundler/src/builtins/hmr-runtime.js","tonejs-instruments/Tonejs-Instruments.js"], null)
-//# sourceMappingURL=/Tonejs-Instruments.df9586d0.js.map
+},{}]},{},["node_modules/parcel-bundler/src/builtins/hmr-runtime.js","static/tonejs-instruments/Tonejs-Instruments.js"], null)
+//# sourceMappingURL=/Tonejs-Instruments.90fdd443.js.map
