@@ -7,4 +7,4 @@ A browser based MIDI game to practice playing chords on a piano. Play the target
 ## Development
 
 1. Install dependencies with `npm install`.
-2. Start a local server with `npm run dev`.# ChordDrops
+2. Start a local server with `npm run dev`.
