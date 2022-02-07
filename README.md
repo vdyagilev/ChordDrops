@@ -4,6 +4,8 @@ A browser based MIDI game to practice playing chords on a piano. Play the target
 
 Fork of https://github.com/adgad/mididorians with reskin and added instrument sounds.
 
+![Alt text](./gameplay.gif?raw=true "Gameplay")
+
 ## Dependencies
 
 Download tonejs-instruments from https://github.com/nbrosowsky/tonejs-instruments and store copy in `/static` folder.

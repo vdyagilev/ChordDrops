@@ -56533,18 +56533,22 @@ class Target {
       targetEl.style.color = "#ecf0f1";
     }
 
+    const notes = _tonal.Chord.get(this.target).notes;
+
     if (Math.random() < 0.5) {
       // add a colored border for every non-root note in chord
       let boxShadow = "";
 
-      const notes = _tonal.Chord.get(this.target).notes;
-
       for (let n = 1; n < notes.length; n++) {
         boxShadow = boxShadow + "0 0 0 ".concat(n * 15, "px ").concat(colors[_tonal.Note.enharmonic(notes[n]).toLowerCase()], ", ");
-      }
+      } // add outside-most black border
 
-      boxShadow = boxShadow.slice(0, boxShadow.length - 2);
+
+      boxShadow = boxShadow + "0 0 0 ".concat(notes.length * 15 - 12, "px ", 'rgb(0, 0, 0, 0.5)'); // boxShadow = boxShadow.slice(0, boxShadow.length-2)
+
       targetEl.style.boxShadow = boxShadow;
+    } else {
+      targetEl.style.boxShadow = "0 0 0 ".concat(3, "px ", 'rgb(0, 0, 0, 0.5)');
     }
   }
 
@@ -56604,9 +56608,9 @@ class Game {
 
     this.gameLoop = null;
     this.hearts = 3;
-    this.heartsStart = 3; // store last target for displaying in game over
+    this.heartsStart = 3; // store all targets on screen in list
 
-    this.lastTarget = null; // load game sounds
+    this.targetsOnscreen = []; // load game sounds
 
     this.gameSounds = {
       "success": new Tone.Player("http://localhost:1234/static/sounds/success.mp3").toDestination(),
@@ -56616,9 +56620,11 @@ class Game {
       "gong": new Tone.Player("http://localhost:1234/static/sounds/gong.mp3").toDestination()
     };
     this.changeBackgroundColor();
+    this.gameOn = false;
   }
 
   start() {
+    this.gameOn = true;
     document.body.classList.add('started');
     this.settings = {
       chordLength: document.querySelector('#chord-length').value,
@@ -56634,13 +56640,15 @@ class Game {
     this.gameLoop = setTimeout(() => {
       this.loop();
     }, this.createTargetRate);
+    this.hearts = this.heartsStart;
     this.drawHearts();
+    this.targetsOnscreen = [];
     this.gameSounds.gong.start();
     this.changeBackgroundColor();
   }
 
   changeBackgroundColor() {
-    const palette = ["#D3F6F3", "#F9FCE1", "#FEE9B2", "#FBD1B7"];
+    const palette = ["#D5F6DD", "#F9FCE1", "#FEE9B2", "#FBD1B7"];
     const color = palette[Math.floor(Math.random() * palette.length)];
     document.querySelector('html').style.backgroundColor = color;
   }
@@ -56685,7 +56693,7 @@ class Game {
     try {
       const target = _Target.default.create(this.settings);
 
-      this.lastTarget = target; // upon touching ground game over
+      this.targetsOnscreen = this.targetsOnscreen.concat([target.target]); // upon touching ground game over
 
       await target.invaded;
       this.gameOver();
@@ -56693,20 +56701,23 @@ class Game {
   }
 
   gameOver() {
-    console.log(this);
+    this.gameOn = false;
     this.gameSounds.gameover.start();
-
-    const lastChord = _tonal.Chord.get(this.lastTarget.target);
-
     document.body.classList.remove('started');
 
     _Target.default.clear();
 
     this.els.error.textContent = "🎉 Score: " + this.score;
+    console.log(this.targetsOnscreen);
+    const lastTarget = this.targetsOnscreen[0];
+
+    const lastChord = _tonal.Chord.get(lastTarget);
+
     this.els.info.textContent = "The 💀 chord was " + lastChord.symbol + " [" + lastChord.notes + "]" + " [" + lastChord.intervals + "]";
     this.resetScore();
     this.resetLevel();
     this.hearts = this.heartsStart;
+    this.targetsOnscreen = [];
     clearTimeout(this.gameLoop);
   }
 
@@ -56724,6 +56735,7 @@ class Game {
     this.gameSounds.levelup.start();
     this.changeBackgroundColor();
     this.hearts = this.heartsStart;
+    this.drawHearts();
     this.level++;
     this.els.level.textContent = this.level;
     this.createTargetRate = this.createTargetRate * 0.9;
@@ -56744,7 +56756,6 @@ class Game {
       notes,
       chords
     } = _ref;
-    console.log(this.hearts);
     this.els.currentChord.textContent = (chords[0] || '').replace(/(.*)M$/, '$1');
 
     function get_inversion(chord) {
@@ -56765,38 +56776,67 @@ class Game {
       }
     }
 
-    var wasHit = false;
+    if (this.gameOn) {
+      var wasHit = false;
+      var hitName = null;
 
-    for (var c = 0; c < chords.length; c++) {
-      const chord = chords[c];
-      wasHit = _Target.default.shoot(chord);
-      var inversionHit = false; // shoot all chord inversions too
+      for (var c = 0; c < chords.length; c++) {
+        const chord = chords[c];
+        wasHit = _Target.default.shoot(chord);
 
-      if (this.settings.inversions) {
-        const inversion = get_inversion(chord);
-        inversionHit = _Target.default.shoot(inversion);
-      }
-
-      if (this.settings.inversions && inversionHit) {
-        wasHit = true;
-      }
-
-      if (wasHit) {
-        this.gameSounds.success.start();
-        this.incrementScore(); // Increase createTargetRate by 10% if user scored 10 points
-        // Stop increasing when a rate of 100ms is reached
-
-        if (this.score > 0 && this.score % 10 == 0 && this.createTargetRate > 100) {
-          this.incrementLevel();
+        if (wasHit) {
+          hitName = chord;
         }
 
-        break;
+        var inversionHit = false; // shoot all chord inversions too
+
+        if (this.settings.inversions) {
+          const inversion = get_inversion(chord);
+          inversionHit = _Target.default.shoot(inversion);
+
+          if (inversionHit) {
+            hitName = inversion;
+          }
+        }
+
+        if (this.settings.inversions && inversionHit) {
+          wasHit = true;
+        } // Successfull hit
+
+
+        if (wasHit) {
+          this.gameSounds.success.start();
+          this.incrementScore(); // Increase createTargetRate by 10% if user scored 10 points
+          // Stop increasing when a rate of 100ms is reached
+
+          if (this.score > 0 && this.score % 10 == 0 && this.createTargetRate > 100) {
+            this.incrementLevel();
+          } // remove from list
+
+
+          let idx = -1;
+
+          for (let t = 0; t < this.targetsOnscreen.length; t++) {
+            if (this.targetsOnscreen[t] === hitName) {
+              // first hit target
+              idx = t;
+              break;
+            }
+          }
+
+          if (idx > -1) {
+            // pop
+            const hitTarget = this.targetsOnscreen.splice(idx, 1); // 2nd parameter means remove one item only
+          }
+
+          break;
+        }
+      } // Subtract a Heart if mistake
+
+
+      if (!wasHit && (notes.length > 0 || chords.length > 0)) {
+        this.lowerHearts();
       }
-    } // Subtract a Heart if mistake
-
-
-    if (!wasHit && (notes.length > 0 || chords.length > 0)) {
-      this.lowerHearts();
     } // update instrument sound 
 
 
@@ -56839,7 +56879,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "51834" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "56293" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

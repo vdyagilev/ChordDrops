@@ -37,8 +37,8 @@ class Game {
 		this.hearts = 3
 		this.heartsStart = 3
 
-		// store last target for displaying in game over
-		this.lastTarget = null
+		// store all targets on screen in list
+		this.targetsOnscreen = []
 
 		// load game sounds
 		this.gameSounds = {
@@ -49,9 +49,13 @@ class Game {
 			"gong": new Tone.Player("http://localhost:1234/static/sounds/gong.mp3").toDestination()
 		}
 		this.changeBackgroundColor()
+
+		this.gameOn = false
 	}
 
 	start() {
+		this.gameOn = true;
+
 		document.body.classList.add('started');
 		this.settings = {
 			chordLength: document.querySelector('#chord-length').value,
@@ -68,13 +72,16 @@ class Game {
 		this.createTarget();
 		this.gameLoop = setTimeout(() => { this.loop() }, this.createTargetRate);
 		
+		this.hearts = this.heartsStart
 		this.drawHearts()
+		this.targetsOnscreen = []
+
 		this.gameSounds.gong.start();
 		this.changeBackgroundColor()
 	}
 
 	changeBackgroundColor() {
-		const palette = ["#D3F6F3", "#F9FCE1", "#FEE9B2", "#FBD1B7"]
+		const palette = ["#D5F6DD", "#F9FCE1", "#FEE9B2", "#FBD1B7"]
 		const color = palette[Math.floor((Math.random()*palette.length))]
 		document.querySelector('html').style.backgroundColor = color
 	}
@@ -118,31 +125,36 @@ class Game {
 	async createTarget() {
 		try {
 			const target = Target.create(this.settings);
-			this.lastTarget = target
-			
+			this.targetsOnscreen = this.targetsOnscreen.concat([target.target])
+
 			// upon touching ground game over
 			await target.invaded;
 			
+
 			this.gameOver()
 
 		} catch (err) { }
 	}
 
 	gameOver() {
-		console.log(this)
+		this.gameOn = false
 		this.gameSounds.gameover.start()
-
-		const lastChord = Chord.get(this.lastTarget.target)
 
 		document.body.classList.remove('started');
 		Target.clear();
 
 		this.els.error.textContent = "🎉 Score: " + this.score 
+		console.log(this.targetsOnscreen)
+
+		const lastTarget = this.targetsOnscreen[0]
+		const lastChord = Chord.get(lastTarget)
 		this.els.info.textContent = "The 💀 chord was " + lastChord.symbol + " [" + lastChord.notes+ "]" +" [" + lastChord.intervals + "]";
-		
+
+
 		this.resetScore();
 		this.resetLevel();
 		this.hearts = this.heartsStart
+		this.targetsOnscreen = []
 
 		clearTimeout(this.gameLoop);
 	}
@@ -160,7 +172,9 @@ class Game {
 	incrementLevel() {
 		this.gameSounds.levelup.start()
 		this.changeBackgroundColor()
+
 		this.hearts = this.heartsStart
+		this.drawHearts()
 
 		this.level++;
 		this.els.level.textContent = this.level;
@@ -178,7 +192,6 @@ class Game {
 	}
 
 	async onChange({ notes, chords }) {
-		console.log(this.hearts)
 		this.els.currentChord.textContent = (chords[0] || '').replace(
 			/(.*)M$/,
 			'$1'
@@ -200,46 +213,74 @@ class Game {
 			}
 		}
 		
-		var wasHit = false
-		for (var c=0; c<chords.length; c++) {
-			const chord = chords[c]
+		if (this.gameOn) {
+				
+			var wasHit = false
+			var hitName = null
+			for (var c=0; c<chords.length; c++) {
+				const chord = chords[c]
 
-			wasHit = Target.shoot(chord) 
-
-			var inversionHit = false
-			// shoot all chord inversions too
-			if (this.settings.inversions) {
-				const inversion = get_inversion(chord)
-				inversionHit = Target.shoot(inversion)
-			}
-			
-			if (this.settings.inversions && inversionHit) {
-				wasHit = true
-			}
-
-			if (wasHit) {
-				this.gameSounds.success.start()
-
-				this.incrementScore();
-				// Increase createTargetRate by 10% if user scored 10 points
-				// Stop increasing when a rate of 100ms is reached
-				if (
-					this.score > 0 &&
-					this.score % 10 == 0 &&
-					this.createTargetRate > 100
-				) {
-					this.incrementLevel();
+				wasHit = Target.shoot(chord) 
+				if (wasHit) {
+					hitName = chord
 				}
 
-				break;
+				var inversionHit = false
+
+				// shoot all chord inversions too
+				if (this.settings.inversions) {
+					const inversion = get_inversion(chord)
+					inversionHit = Target.shoot(inversion)
+
+					if (inversionHit) {
+						hitName = inversion
+					}
+				}
+				
+				if (this.settings.inversions && inversionHit) {
+					wasHit = true
+				}
+
+				// Successfull hit
+				if (wasHit) {
+					this.gameSounds.success.start()
+
+					this.incrementScore();
+
+					// Increase createTargetRate by 10% if user scored 10 points
+					// Stop increasing when a rate of 100ms is reached
+					if (
+						this.score > 0 &&
+						this.score % 10 == 0 &&
+						this.createTargetRate > 100
+					) {
+						this.incrementLevel();
+					}
+
+					// remove from list
+					let idx = -1
+					for (let t=0; t<this.targetsOnscreen.length; t++) {
+						if (this.targetsOnscreen[t] === hitName) {
+							// first hit target
+							idx = t
+							break
+						}
+					}
+					if (idx > -1) {
+						// pop
+						const hitTarget = this.targetsOnscreen.splice(idx, 1); // 2nd parameter means remove one item only
+					}
+
+
+					break;
+				}
+			}
+
+			// Subtract a Heart if mistake
+			if (!wasHit && (notes.length >0 || chords.length > 0)) {
+				this.lowerHearts()
 			}
 		}
-
-		// Subtract a Heart if mistake
-		if (!wasHit && (notes.length >0 || chords.length > 0)) {
-			this.lowerHearts()
-		}
-		
 		// update instrument sound 
 	
 		if (notes.length >0 || chords.length > 0) {

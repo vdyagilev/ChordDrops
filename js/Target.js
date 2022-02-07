@@ -156,16 +156,23 @@ export default class Target {
 			targetEl.style.color = "#ecf0f1"
 		}
 
+		const notes = Chord.get(this.target).notes
 		if (Math.random() < 0.5) {
 			// add a colored border for every non-root note in chord
 			let boxShadow = ""
-			const notes = Chord.get(this.target).notes
+			
 			for (let n=1; n<notes.length; n++) {
 				boxShadow = boxShadow + `0 0 0 ${n*15}px ${colors[Note.enharmonic(notes[n]).toLowerCase()]}, `
 			}
-			boxShadow = boxShadow.slice(0, boxShadow.length-2)
+			
+			// add outside-most black border
+			boxShadow = boxShadow + `0 0 0 ${(notes.length*15)-12}px ${'rgb(0, 0, 0, 0.5)'}`
 
+			// boxShadow = boxShadow.slice(0, boxShadow.length-2)
 			targetEl.style.boxShadow = boxShadow
+		}
+		else {
+			targetEl.style.boxShadow = 	`0 0 0 ${3}px ${'rgb(0, 0, 0, 0.5)'}`
 		}
 	}
 }
