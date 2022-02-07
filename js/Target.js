@@ -1,5 +1,36 @@
 import { Note, Key, ChordType, Chord } from '@tonaljs/tonal';
 
+const colors = {
+	"a": "#e23232",
+	"bbb": "#e23232",
+	"a#": "#5ca3ff",
+	"bb": "#5ca3ff",
+	"b": "#ba25f5",
+	"b#": "#e3e3e3", 
+	"cb": "#ba25f5",
+	"c": "#e3e3e3",
+	"c#": "#c6f7fd",
+	"db": "#c6f7fd", 
+	"d": "#45d856",
+	"c##": "#45d856",
+	"ebb": "#45d856",
+	"d#": "#fce61c",
+	"eb": "#fce61c",
+	"e": "#fa851f",
+	"d##": "#fa851f",
+	"e#": "#3d3c3c",
+	"fb": "#fa851f",
+	"f": "#3d3c3c",
+	"f#": "#00027a",
+	"gb": "#00027a",
+	"g": "#6d411a",
+	"f##": "#6d411a",
+	"abb": "#6d411a",
+	"g#": "#961724",
+	"ab": "#961724",
+	"g##": "#e23232",
+}
+
 const complexityFilter = {
 	simple: (c) => ['Major', 'Minor'].includes(c.quality) && c.name,
 	intermediate: (c) => c.name,
@@ -106,36 +137,7 @@ export default class Target {
 
 		// add note specific color
 
-		const colors = {
-			"a": "#e23232",
-			"bbb": "#e23232",
-			"a#": "#5ca3ff",
-			"bb": "#5ca3ff",
-			"b": "#ba25f5",
-			"b#": "#e3e3e3", 
-			"cb": "#ba25f5",
-			"c": "#e3e3e3",
-			"c#": "#c6f7fd",
-			"db": "#c6f7fd", 
-			"d": "#45d856",
-			"c##": "#45d856",
-			"ebb": "#45d856",
-			"d#": "#fce61c",
-			"eb": "#fce61c",
-			"e": "#fa851f",
-			"d##": "#fa851f",
-			"e#": "#3d3c3c",
-			"fb": "#fa851f",
-			"f": "#3d3c3c",
-			"f#": "#00027a",
-			"gb": "#00027a",
-			"g": "#6d411a",
-			"f##": "#6d411a",
-			"abb": "#6d411a",
-			"g#": "#961724",
-			"ab": "#961724",
-			"g##": "#e23232",
-		}
+		
 		const key = Chord.get(this.target).tonic.toLowerCase();
 
 		targetEl.style.backgroundColor = colors[key]
@@ -153,5 +155,15 @@ export default class Target {
 		} else {
 			targetEl.style.color = "#ecf0f1"
 		}
+
+		// add a colored border for every non-root note in chord
+		let boxShadow = ""
+		const notes = Chord.get(this.target).notes
+		for (let n=0; n<notes.length; n++) {
+			boxShadow = boxShadow + `0 0 0 ${n*10}px ${colors[notes[n].toLowerCase()]}, `
+		}
+		boxShadow =  boxShadow.slice(0, boxShadow.length-2)
+
+		targetEl.style.boxShadow = boxShadow
 	}
 }

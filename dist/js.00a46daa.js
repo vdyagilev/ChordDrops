@@ -56388,6 +56388,36 @@ var _tonal = require("@tonaljs/tonal");
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
+const colors = {
+  "a": "#e23232",
+  "bbb": "#e23232",
+  "a#": "#5ca3ff",
+  "bb": "#5ca3ff",
+  "b": "#ba25f5",
+  "b#": "#e3e3e3",
+  "cb": "#ba25f5",
+  "c": "#e3e3e3",
+  "c#": "#c6f7fd",
+  "db": "#c6f7fd",
+  "d": "#45d856",
+  "c##": "#45d856",
+  "ebb": "#45d856",
+  "d#": "#fce61c",
+  "eb": "#fce61c",
+  "e": "#fa851f",
+  "d##": "#fa851f",
+  "e#": "#3d3c3c",
+  "fb": "#fa851f",
+  "f": "#3d3c3c",
+  "f#": "#00027a",
+  "gb": "#00027a",
+  "g": "#6d411a",
+  "f##": "#6d411a",
+  "abb": "#6d411a",
+  "g#": "#961724",
+  "ab": "#961724",
+  "g##": "#e23232"
+};
 const complexityFilter = {
   simple: c => ['Major', 'Minor'].includes(c.quality) && c.name,
   intermediate: c => c.name,
@@ -56484,37 +56514,6 @@ class Target {
     });
     this.el = targetEl; // add note specific color
 
-    const colors = {
-      "a": "#e23232",
-      "bbb": "#e23232",
-      "a#": "#5ca3ff",
-      "bb": "#5ca3ff",
-      "b": "#ba25f5",
-      "b#": "#e3e3e3",
-      "cb": "#ba25f5",
-      "c": "#e3e3e3",
-      "c#": "#c6f7fd",
-      "db": "#c6f7fd",
-      "d": "#45d856",
-      "c##": "#45d856",
-      "ebb": "#45d856",
-      "d#": "#fce61c",
-      "eb": "#fce61c",
-      "e": "#fa851f",
-      "d##": "#fa851f",
-      "e#": "#3d3c3c",
-      "fb": "#fa851f",
-      "f": "#3d3c3c",
-      "f#": "#00027a",
-      "gb": "#00027a",
-      "g": "#6d411a",
-      "f##": "#6d411a",
-      "abb": "#6d411a",
-      "g#": "#961724",
-      "ab": "#961724",
-      "g##": "#e23232"
-    };
-
     const key = _tonal.Chord.get(this.target).tonic.toLowerCase();
 
     targetEl.style.backgroundColor = colors[key]; // font color
@@ -56532,7 +56531,19 @@ class Target {
       targetEl.style.color = "#2c3e50";
     } else {
       targetEl.style.color = "#ecf0f1";
+    } // add a colored border for every non-root note in chord
+
+
+    let boxShadow = "";
+
+    const notes = _tonal.Chord.get(this.target).notes;
+
+    for (let n = 0; n < notes.length; n++) {
+      boxShadow = boxShadow + "0 0 0 ".concat(n * 10, "px ").concat(colors[notes[n].toLowerCase()], ", ");
     }
+
+    boxShadow = boxShadow.slice(0, boxShadow.length - 2);
+    targetEl.style.boxShadow = boxShadow;
   }
 
 }
@@ -56570,7 +56581,8 @@ class Game {
       level: document.querySelector('.level .value'),
       score: document.querySelector('.score .value'),
       error: document.querySelector('.error'),
-      info: document.querySelector('.errorInfo')
+      info: document.querySelector('.errorInfo'),
+      hearts: document.querySelector('.hearts')
     };
     this.piano = new _Piano.default();
     this.input = new _MIDIInput.default({
@@ -56611,6 +56623,7 @@ class Game {
     this.gameLoop = setTimeout(() => {
       this.loop();
     }, this.createTargetRate);
+    this.lives = 3;
     this.gameSounds.gong.start(); //this.changeBackgroundColor()
   }
 
@@ -56638,6 +56651,11 @@ class Game {
   }
 
   gameOver() {
+    // // while lives left decrement and ocn
+    // if (this.lives > 0) {
+    // 	this.lives--
+    // 	break
+    // }
     this.gameSounds.gameover.start();
 
     const lastChord = _tonal.Chord.get(this.lastTarget.target);
@@ -56780,7 +56798,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "56167" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "58885" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

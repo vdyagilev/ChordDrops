@@ -14,6 +14,7 @@ class Game {
 			score: document.querySelector('.score .value'),
 			error: document.querySelector('.error'),
 			info: document.querySelector('.errorInfo'),
+			hearts: document.querySelector('.hearts'),
 		};
 
 		this.piano = new Piano();
@@ -57,6 +58,7 @@ class Game {
 		this.createTarget();
 		this.gameLoop = setTimeout(() => { this.loop() }, this.createTargetRate);
 
+		this.lives = 3
 		this.gameSounds.gong.start();
 		//this.changeBackgroundColor()
 	}
@@ -83,6 +85,12 @@ class Game {
 	}
 
 	gameOver() {
+		// // while lives left decrement and ocn
+		// if (this.lives > 0) {
+		// 	this.lives--
+		// 	break
+		// }
+
 		this.gameSounds.gameover.start()
 
 		const lastChord = Chord.get(this.lastTarget.target)
