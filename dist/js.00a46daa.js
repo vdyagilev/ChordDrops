@@ -56553,6 +56553,12 @@ var _Target = _interopRequireDefault(require("./Target"));
 
 var _tonal = require("@tonaljs/tonal");
 
+var Tone = _interopRequireWildcard(require("tone"));
+
+function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function () { return cache; }; return cache; }
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 class Game {
@@ -56563,7 +56569,8 @@ class Game {
       startButton: document.querySelector('.start-game'),
       level: document.querySelector('.level .value'),
       score: document.querySelector('.score .value'),
-      error: document.querySelector('.error')
+      error: document.querySelector('.error'),
+      info: document.querySelector('.errorInfo')
     };
     this.piano = new _Piano.default();
     this.input = new _MIDIInput.default({
@@ -56577,8 +56584,15 @@ class Game {
 
     this.gameLoop = null; // store last target for displaying in game over
 
-    this.lastTarget = null;
-    this.count = 0;
+    this.lastTarget = null; // load game sounds
+
+    this.gameSounds = {
+      "success": new Tone.Player("http://localhost:1234/static/sounds/success.mp3").toDestination(),
+      "fail": new Tone.Player("http://localhost:1234/static/sounds/fail.mp3").toDestination(),
+      "gameover": new Tone.Player("http://localhost:1234/static/sounds/gameover.mp3").toDestination(),
+      "levelup": new Tone.Player("http://localhost:1234/static/sounds/levelup.mp3").toDestination(),
+      "gong": new Tone.Player("http://localhost:1234/static/sounds/gong.mp3").toDestination()
+    };
   }
 
   start() {
@@ -56597,6 +56611,13 @@ class Game {
     this.gameLoop = setTimeout(() => {
       this.loop();
     }, this.createTargetRate);
+    this.gameSounds.gong.start(); //this.changeBackgroundColor()
+  }
+
+  changeBackgroundColor() {
+    const palette = ["#ffadadff", "#ffd6a5ff", "#fdffb6ff", "#caffbfff", "#9bf6ffff", "#a0c4ffff", "#bdb2ffff", "#ffc6ffff"];
+    const color = palette[Math.floor(Math.random() * palette.length)];
+    document.querySelector('html').style.backgroundColor = color;
   }
 
   async loop() {
@@ -56617,13 +56638,16 @@ class Game {
   }
 
   gameOver() {
+    this.gameSounds.gameover.start();
+
     const lastChord = _tonal.Chord.get(this.lastTarget.target);
 
     document.body.classList.remove('started');
 
     _Target.default.clear();
 
-    this.els.error.textContent = "🎉 Score: " + this.score + " Last Chord: " + lastChord.symbol + " [" + lastChord.notes + "]" + " [" + lastChord.intervals + "]";
+    this.els.error.textContent = "🎉 Score: " + this.score;
+    this.els.info.textContent = "The 💀 chord was " + lastChord.symbol + " [" + lastChord.notes + "]" + " [" + lastChord.intervals + "]";
     this.resetScore();
     this.resetLevel();
     clearTimeout(this.gameLoop);
@@ -56640,6 +56664,7 @@ class Game {
   }
 
   incrementLevel() {
+    this.gameSounds.levelup.start();
     this.level++;
     this.els.level.textContent = this.level;
     this.createTargetRate = this.createTargetRate * 0.9;
@@ -56692,7 +56717,12 @@ class Game {
         inversionHit = _Target.default.shoot(inversion);
       }
 
-      if (wasHit || this.settings.inversions && inversionHit) {
+      if (this.settings.inversions && inversionHit) {
+        wasHit = true;
+      }
+
+      if (wasHit) {
+        this.gameSounds.success.start();
         this.incrementScore(); // Increase createTargetRate by 10% if user scored 10 points
         // Stop increasing when a rate of 100ms is reached
 
@@ -56705,28 +56735,24 @@ class Game {
     } // Lower score if mistake
 
 
-    if (!(wasHit || this.settings.inversions && inversionHit) && notes.length > 0 && this.score > 0) {
+    if (!wasHit && (notes.length > 0 || chords.length > 0)) {
       this.score--;
       this.els.score.textContent = this.score;
     } // update instrument sound 
 
 
-    const switchEvery = 7;
-
-    if (this.count != 0 && this.count % switchEvery == 0) {
-      this.piano.instrumentCurrent = this.piano.getRandomInstrument();
-    }
-
     if (notes.length > 0 || chords.length > 0) {
-      // increment on valid input
-      this.count++;
+      // update instrument sound randomly
+      if (Math.random() < 0.15) {
+        this.piano.instrumentCurrent = this.piano.getRandomInstrument();
+      }
     }
   }
 
 }
 
 new Game();
-},{"./MIDIInput":"js/MIDIInput.js","./Piano":"js/Piano.js","./Target":"js/Target.js","@tonaljs/tonal":"node_modules/@tonaljs/tonal/dist/index.es.js"}],"node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+},{"./MIDIInput":"js/MIDIInput.js","./Piano":"js/Piano.js","./Target":"js/Target.js","@tonaljs/tonal":"node_modules/@tonaljs/tonal/dist/index.es.js","tone":"node_modules/tone/build/esm/index.js"}],"node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 var OldModule = module.bundle.Module;
@@ -56754,7 +56780,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "60255" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "56167" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

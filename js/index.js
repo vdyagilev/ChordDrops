@@ -2,6 +2,7 @@ import MIDIInput from './MIDIInput';
 import Piano from './Piano';
 import Target from './Target';
 import { Note, Key, ChordType, Chord } from '@tonaljs/tonal';
+import * as Tone from 'tone';
 
 class Game {
 	constructor() {
@@ -12,6 +13,7 @@ class Game {
 			level: document.querySelector('.level .value'),
 			score: document.querySelector('.score .value'),
 			error: document.querySelector('.error'),
+			info: document.querySelector('.errorInfo'),
 		};
 
 		this.piano = new Piano();
@@ -28,7 +30,14 @@ class Game {
 		// store last target for displaying in game over
 		this.lastTarget = null
 
-		this.count = 0
+		// load game sounds
+		this.gameSounds = {
+			"success": new Tone.Player("http://localhost:1234/static/sounds/success.mp3").toDestination(),
+			"fail": new Tone.Player("http://localhost:1234/static/sounds/fail.mp3").toDestination(),
+			"gameover": new Tone.Player("http://localhost:1234/static/sounds/gameover.mp3").toDestination(),
+			"levelup": new Tone.Player("http://localhost:1234/static/sounds/levelup.mp3").toDestination(),
+			"gong": new Tone.Player("http://localhost:1234/static/sounds/gong.mp3").toDestination()
+		}
 	}
 
 	start() {
@@ -47,6 +56,16 @@ class Game {
 		this.piano.start();
 		this.createTarget();
 		this.gameLoop = setTimeout(() => { this.loop() }, this.createTargetRate);
+
+		this.gameSounds.gong.start();
+		//this.changeBackgroundColor()
+	}
+
+	changeBackgroundColor() {
+		const palette = ["#ffadadff", "#ffd6a5ff", "#fdffb6ff", "#caffbfff", "#9bf6ffff",
+		 "#a0c4ffff", "#bdb2ffff", "#ffc6ffff",]
+		const color = palette[Math.floor((Math.random()*palette.length))]
+		document.querySelector('html').style.backgroundColor = color
 	}
 
 	async loop() {
@@ -64,12 +83,14 @@ class Game {
 	}
 
 	gameOver() {
+		this.gameSounds.gameover.start()
+
 		const lastChord = Chord.get(this.lastTarget.target)
 
 		document.body.classList.remove('started');
 		Target.clear();
-		this.els.error.textContent = "🎉 Score: " + this.score + 
-		 " Last Chord: " + lastChord.symbol + " [" + lastChord.notes+ "]" +" [" + lastChord.intervals + "]";
+		this.els.error.textContent = "🎉 Score: " + this.score 
+		this.els.info.textContent = "The 💀 chord was " + lastChord.symbol + " [" + lastChord.notes+ "]" +" [" + lastChord.intervals + "]";
 		this.resetScore();
 		this.resetLevel();
 		clearTimeout(this.gameLoop);
@@ -86,6 +107,8 @@ class Game {
 	}
 
 	incrementLevel() {
+		this.gameSounds.levelup.start()
+
 		this.level++;
 		this.els.level.textContent = this.level;
 		this.createTargetRate = this.createTargetRate * 0.9;
@@ -136,8 +159,13 @@ class Game {
 				inversionHit = Target.shoot(inversion)
 			}
 			
+			if (this.settings.inversions && inversionHit) {
+				wasHit = true
+			}
 
-			if (wasHit || (this.settings.inversions && inversionHit)) {
+			if (wasHit) {
+				this.gameSounds.success.start()
+
 				this.incrementScore();
 				// Increase createTargetRate by 10% if user scored 10 points
 				// Stop increasing when a rate of 100ms is reached
@@ -154,19 +182,18 @@ class Game {
 		}
 
 		// Lower score if mistake
-		if (!(wasHit || (this.settings.inversions && inversionHit)) && notes.length > 0 && this.score > 0) {
+		if (!wasHit && (notes.length >0 || chords.length > 0)) {
 			this.score--;
 			this.els.score.textContent = this.score;
 		}
 		
 		// update instrument sound 
-		const switchEvery = 7
-		if (this.count != 0 && this.count % switchEvery == 0) {
-			this.piano.instrumentCurrent = this.piano.getRandomInstrument()
-		} 
+	
 		if (notes.length >0 || chords.length > 0) {
-			// increment on valid input
-			this.count++
+			// update instrument sound randomly
+			if (Math.random() < 0.15) {
+				this.piano.instrumentCurrent = this.piano.getRandomInstrument()
+			} 
 		}
 		
 	}

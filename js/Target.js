@@ -19,6 +19,7 @@ const getChordTarget = ({
 	
 	const randomType =
 		validChordTypes[Math.floor(Math.random() * validChordTypes.length)];
+
 	return {
 		root: randomNote,
 		quality: randomType,
