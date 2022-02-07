@@ -138,9 +138,9 @@ export default class Target {
 		// add note specific color
 
 		
-		const key = Chord.get(this.target).tonic.toLowerCase();
+		const keyEnharnomic = Note.enharmonic(Chord.get(this.target).tonic).toLowerCase();
 
-		targetEl.style.backgroundColor = colors[key]
+		targetEl.style.backgroundColor = colors[keyEnharnomic]
 		// font color
 		function hex_is_light(color) {
 			const hex = color.replace('#', '');
@@ -150,20 +150,22 @@ export default class Target {
 			const brightness = ((c_r * 299) + (c_g * 587) + (c_b * 114)) / 1000;
 			return brightness > 155;
 		}
-		if (hex_is_light(colors[key])) {
+		if (hex_is_light(colors[keyEnharnomic])) {
 			targetEl.style.color = "#2c3e50"
 		} else {
 			targetEl.style.color = "#ecf0f1"
 		}
 
-		// add a colored border for every non-root note in chord
-		let boxShadow = ""
-		const notes = Chord.get(this.target).notes
-		for (let n=0; n<notes.length; n++) {
-			boxShadow = boxShadow + `0 0 0 ${n*10}px ${colors[notes[n].toLowerCase()]}, `
-		}
-		boxShadow =  boxShadow.slice(0, boxShadow.length-2)
+		if (Math.random() < 0.5) {
+			// add a colored border for every non-root note in chord
+			let boxShadow = ""
+			const notes = Chord.get(this.target).notes
+			for (let n=1; n<notes.length; n++) {
+				boxShadow = boxShadow + `0 0 0 ${n*15}px ${colors[Note.enharmonic(notes[n]).toLowerCase()]}, `
+			}
+			boxShadow = boxShadow.slice(0, boxShadow.length-2)
 
-		targetEl.style.boxShadow = boxShadow
+			targetEl.style.boxShadow = boxShadow
+		}
 	}
 }

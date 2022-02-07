@@ -4,6 +4,12 @@ import Target from './Target';
 import { Note, Key, ChordType, Chord } from '@tonaljs/tonal';
 import * as Tone from 'tone';
 
+function removeAllChildNodes(parent) {
+    while (parent.firstChild) {
+        parent.removeChild(parent.firstChild);
+    }
+}
+
 class Game {
 	constructor() {
 		this.els = {
@@ -28,6 +34,9 @@ class Game {
 		this.createTargetRate = 5000; // start at 5 seconds
 		this.gameLoop = null;
 
+		this.hearts = 3
+		this.heartsStart = 3
+
 		// store last target for displaying in game over
 		this.lastTarget = null
 
@@ -39,6 +48,7 @@ class Game {
 			"levelup": new Tone.Player("http://localhost:1234/static/sounds/levelup.mp3").toDestination(),
 			"gong": new Tone.Player("http://localhost:1234/static/sounds/gong.mp3").toDestination()
 		}
+		this.changeBackgroundColor()
 	}
 
 	start() {
@@ -57,17 +67,47 @@ class Game {
 		this.piano.start();
 		this.createTarget();
 		this.gameLoop = setTimeout(() => { this.loop() }, this.createTargetRate);
-
-		this.lives = 3
+		
+		this.drawHearts()
 		this.gameSounds.gong.start();
-		//this.changeBackgroundColor()
+		this.changeBackgroundColor()
 	}
 
 	changeBackgroundColor() {
-		const palette = ["#ffadadff", "#ffd6a5ff", "#fdffb6ff", "#caffbfff", "#9bf6ffff",
-		 "#a0c4ffff", "#bdb2ffff", "#ffc6ffff",]
+		const palette = ["#D3F6F3", "#F9FCE1", "#FEE9B2", "#FBD1B7"]
 		const color = palette[Math.floor((Math.random()*palette.length))]
 		document.querySelector('html').style.backgroundColor = color
+	}
+
+
+	drawHearts() {
+		// update display
+		removeAllChildNodes(this.els.hearts) // clear
+
+		for (let h=0; h<this.heartsStart; h++) {
+			const img = document.createElement('img')
+			img.classList.add('heart')
+			
+			// empty heart
+			if (h >= this.hearts) {
+				img.src = 'http://localhost:1234/static/images/heart-empty.png'
+			} else {
+				img.src = 'http://localhost:1234/static/images/heart-filled.png'
+			}
+
+			
+			this.els.hearts.appendChild(img) // insert
+		}
+	}
+	lowerHearts() {
+		if (this.hearts > 0) {
+			this.hearts--
+			this.drawHearts()
+
+		} 
+		if (this.hearts <= 0) {
+			this.gameOver()
+		}
 	}
 
 	async loop() {
@@ -78,29 +118,32 @@ class Game {
 	async createTarget() {
 		try {
 			const target = Target.create(this.settings);
-			await target.invaded;
 			this.lastTarget = target
-			this.gameOver();
+			
+			// upon touching ground game over
+			await target.invaded;
+			
+			this.gameOver()
+
 		} catch (err) { }
 	}
 
 	gameOver() {
-		// // while lives left decrement and ocn
-		// if (this.lives > 0) {
-		// 	this.lives--
-		// 	break
-		// }
-
+		console.log(this)
 		this.gameSounds.gameover.start()
 
 		const lastChord = Chord.get(this.lastTarget.target)
 
 		document.body.classList.remove('started');
 		Target.clear();
+
 		this.els.error.textContent = "🎉 Score: " + this.score 
 		this.els.info.textContent = "The 💀 chord was " + lastChord.symbol + " [" + lastChord.notes+ "]" +" [" + lastChord.intervals + "]";
+		
 		this.resetScore();
 		this.resetLevel();
+		this.hearts = this.heartsStart
+
 		clearTimeout(this.gameLoop);
 	}
 
@@ -116,6 +159,8 @@ class Game {
 
 	incrementLevel() {
 		this.gameSounds.levelup.start()
+		this.changeBackgroundColor()
+		this.hearts = this.heartsStart
 
 		this.level++;
 		this.els.level.textContent = this.level;
@@ -133,6 +178,7 @@ class Game {
 	}
 
 	async onChange({ notes, chords }) {
+		console.log(this.hearts)
 		this.els.currentChord.textContent = (chords[0] || '').replace(
 			/(.*)M$/,
 			'$1'
@@ -189,10 +235,9 @@ class Game {
 			}
 		}
 
-		// Lower score if mistake
+		// Subtract a Heart if mistake
 		if (!wasHit && (notes.length >0 || chords.length > 0)) {
-			this.score--;
-			this.els.score.textContent = this.score;
+			this.lowerHearts()
 		}
 		
 		// update instrument sound 
