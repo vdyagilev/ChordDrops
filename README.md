@@ -6,7 +6,7 @@ Fork of https://github.com/adgad/mididorians with reskin and added instrument so
 
 ## Dependencies
 
-Download tonejs-instruments from https://github.com/nbrosowsky/tonejs-instruments and store copy in `/static` and also in the root dir.
+Download tonejs-instruments from https://github.com/nbrosowsky/tonejs-instruments and store copy in `/static` folder.
 
 ## Development
 
