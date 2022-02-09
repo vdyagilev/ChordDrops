@@ -186,9 +186,10 @@ option {
 }
 
 .currentChord {
-	color: #d35400;
-	font-weight: 800;
-	font-size: 46px;
+	color: #2c3e50;
+	font-weight: 400;
+	font-size: 84px;
+	font-family: sans-serif;
 	position: absolute;
 	bottom: 10px;
 	left: 10px;
@@ -253,6 +254,23 @@ option {
 	.piano__note.pressed {
 		background: var(--key-color);
 	}
+
+
+.musicScore {
+	position: absolute;
+	left: 0;
+	bottom: 100px;
+	text-align: center;
+}
+
+
+
+/* svg .abcjs-note {
+	fill: #34495e;
+	stroke: #2c3e50;
+} */
+
+
 
 
 /*# sourceMappingURL=/styles.b61e60ae.css.map */

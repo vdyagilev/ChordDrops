@@ -55,21 +55,22 @@
 				<option value="intermediate">Intermediate</option>
 				<option value="hard">Hard</option>
 			</select>
-			<label for="chord-pace">Speed</label>
-			<select name="chord-pace" id="chord-pace" >
-				<option value="42000">Super-Slow</option>
-				<option value="24000">Slow</option>
-				<option value="9000">Medium</option>
-				<option value="4000">Fast</option>
-			</select>
+
+			<br/>
+
+			<label for="chord-pace">Slowness</label>
+			<input type="range" min="1000" max="25000" value="3000" class="slider" id="chord-pace">
 			<label for="inversions">Inversions</label>
 			<select name="inversions" id="inversions" >
 				<option value="Active">On</option>
 				<option value="Inactive">Off</option>
 			</select>
+			<label for="color-prob">Color Probability %</label>
+			<input type="range" min="0" max="100" value="50" class="slider" id="color-prob">
 		</form>
 		<button class="start-game">Start</button>
 		</div>
+		
 
 		<p class="error"></p>
 		<p class="errorInfo"></p>
@@ -89,6 +90,8 @@
 		<div class="hearts"></div>
 
 		<div class="currentChord"></div>
+
+		<div class="musicScore"></div>
 
 		<div class="piano">
 			<div class="piano__note" data-note="C" style="--key-color: #e3e3e3;"></div>

@@ -3,6 +3,8 @@ import Piano from './Piano';
 import Target from './Target';
 import { Note, Key, ChordType, Chord } from '@tonaljs/tonal';
 import * as Tone from 'tone';
+import abcjs from 'abcjs'
+import renderAbc from 'abcjs/src/api/abc_tunebook_svg';
 
 function removeAllChildNodes(parent) {
     while (parent.firstChild) {
@@ -21,6 +23,7 @@ class Game {
 			error: document.querySelector('.error'),
 			info: document.querySelector('.errorInfo'),
 			hearts: document.querySelector('.hearts'),
+			musicScore: document.querySelector('.musicScore')
 		};
 
 		this.piano = new Piano();
@@ -64,7 +67,8 @@ class Game {
 			chordRoots: [
 				...document.querySelector('#chord-roots').selectedOptions,
 			].map((o) => o.value),
-			inversions: document.querySelector('#inversions').value === "Active"
+			inversions: document.querySelector('#inversions').value === "Active",
+			colorProbability: document.querySelector('#color-prob').value / 100.0,
 		};
 		this.resetScore();
 		this.resetLevel();
@@ -156,6 +160,8 @@ class Game {
 		this.hearts = this.heartsStart
 		this.targetsOnscreen = []
 
+		this.createTargetRate = 5000;
+
 		clearTimeout(this.gameLoop);
 	}
 
@@ -192,10 +198,41 @@ class Game {
 	}
 
 	async onChange({ notes, chords }) {
+		// show name of chord immediatley
 		this.els.currentChord.textContent = (chords[0] || '').replace(
 			/(.*)M$/,
 			'$1'
 		);
+
+		// show chord on music score
+		function notesListToABCStr(lst) {
+			let x = "" 
+			for (let i=0; i<lst.length; i++) {
+				let note = lst[i]
+				
+				// convert accidentals
+				while (note.includes('#')) {
+					// move accidental to front of note
+					note = note.replace('#', '')
+					note = '^' + note
+				}
+
+				while (note.includes('b')) {
+					// move accidental to front of note
+					note = note.replace('b', '')
+					note = '_' + note
+				}
+
+				x = x + note
+			}
+			return x
+		}
+		var abcString = `X:1\nK:C\n[${notesListToABCStr(notes)}]|\n`;
+
+		renderAbc(this.els.musicScore, abcString, {
+			add_classes: true, // add css classes to all elements
+			scale: 3,
+		});
 
 		function get_inversion(chord) {
 			if (!chord.includes("/")) {
@@ -285,7 +322,7 @@ class Game {
 	
 		if (notes.length >0 || chords.length > 0) {
 			// update instrument sound randomly
-			if (Math.random() < 0.15) {
+			if (Math.random() < 0.33) {
 				this.piano.instrumentCurrent = this.piano.getRandomInstrument()
 			} 
 		}

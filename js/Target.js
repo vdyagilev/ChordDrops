@@ -1,4 +1,5 @@
 import { Note, Key, ChordType, Chord } from '@tonaljs/tonal';
+import { shuffle } from 'lodash';
 
 const colors = {
 	"a": "#e23232",
@@ -31,6 +32,9 @@ const colors = {
 	"g##": "#e23232",
 }
 
+// avoid these chords
+const blacklist = ["69#11", "b9sus"]
+
 const complexityFilter = {
 	simple: (c) => ['Major', 'Minor'].includes(c.quality) && c.name,
 	intermediate: (c) => c.name,
@@ -46,8 +50,10 @@ const getChordTarget = ({
 	const validChordTypes = ChordType.all()
 		.filter(complexityFilter[chordComplexity])
 		.filter((c) => c.intervals.length <= parseInt(chordLength))
-		.map((c) => c.aliases[0]);
-	
+		.map((c) => c.aliases[0])
+		.filter(c => !blacklist.includes(c))
+
+
 	const randomType =
 		validChordTypes[Math.floor(Math.random() * validChordTypes.length)];
 
@@ -70,8 +76,10 @@ export default class Target {
 			return;
 		}
 
-		const newTarget = new Target(root, quality, settings.speed);
+
+		const newTarget = new Target(root, quality, settings.speed, null, settings.colorProbability);
 		Target.all.set(newTarget.target, newTarget);
+
 		return newTarget;
 	}
 
@@ -93,11 +101,13 @@ export default class Target {
 		}
 	}
 
-	constructor(root, quality, speed, onFall) {
+	constructor(root, quality, speed, onFall, colorProbability) {
 		this.root = root;
 		this.quality = quality;
 		this.target = root + quality;
 		this.speed = speed;
+		this.colorProbability = colorProbability
+
 		this.render();
 		this.invaded = this.animation.finished;
 	}
@@ -137,8 +147,8 @@ export default class Target {
 
 		// add note specific color
 
-		
-		const keyEnharnomic = Note.enharmonic(Chord.get(this.target).tonic).toLowerCase();
+		const tonic = Chord.get(this.target).tonic
+		const keyEnharnomic = Note.enharmonic(tonic).toLowerCase();
 
 		targetEl.style.backgroundColor = colors[keyEnharnomic]
 		// font color
@@ -156,13 +166,18 @@ export default class Target {
 			targetEl.style.color = "#ecf0f1"
 		}
 
-		const notes = Chord.get(this.target).notes
-		if (Math.random() < 0.5) {
+		let notes = Chord.get(this.target).notes
+		// remove root
+		notes = notes.filter(n => n != tonic)
+		// shuffle notes in chord to get random inversion
+		notes = shuffle(notes) 
+
+		if (Math.random() < this.colorProbability) {
 			// add a colored border for every non-root note in chord
 			let boxShadow = ""
 			
-			for (let n=1; n<notes.length; n++) {
-				boxShadow = boxShadow + `0 0 0 ${n*15}px ${colors[Note.enharmonic(notes[n]).toLowerCase()]}, `
+			for (let n=0; n<notes.length; n++) {
+				boxShadow = boxShadow + `0 0 0 ${(n+1)*15}px ${colors[Note.enharmonic(notes[n]).toLowerCase()]}, `
 			}
 			
 			// add outside-most black border
