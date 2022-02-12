@@ -56305,7 +56305,7 @@ class Piano {
     const filter = new Tone.Filter(500, 'highpass').toDestination();
     this.synth = new Tone.PolySynth().connect(filter).connect(reverb); // load tonejs-instruments sounds
 
-    const instruments = ['piano', 'bass-electric', 'bassoon', 'cello', 'clarinet', 'contrabass', 'flute', 'french-horn', 'guitar-acoustic', 'guitar-electric', 'guitar-nylon', 'harmonium', 'harp', 'organ', 'saxophone', 'trombone', 'trumpet', 'tuba', 'violin', 'xylophone'];
+    const instruments = ['piano', 'bass-electric', 'bassoon', 'cello', 'clarinet', 'contrabass', 'flute', 'french-horn', 'guitar-acoustic', 'guitar-electric', 'harmonium', 'organ', 'saxophone', 'trombone', 'trumpet', 'tuba', 'violin']; // + ['xylophone', 'harp', 'guitar-nylon',]
 
     const samples = _TonejsInstruments.SampleLibrary.load({
       instruments: instruments,
@@ -93891,7 +93891,8 @@ class Game {
       speed: document.querySelector('#chord-pace').value,
       chordRoots: [...document.querySelector('#chord-roots').selectedOptions].map(o => o.value),
       inversions: document.querySelector('#inversions').value === "Active",
-      colorProbability: document.querySelector('#color-prob').value / 100.0
+      colorProbability: document.querySelector('#color-prob').value / 100.0,
+      useHearts: document.querySelector('#hearts-checkbox').checked
     };
     this.resetScore();
     this.resetLevel();
@@ -93917,17 +93918,19 @@ class Game {
     // update display
     removeAllChildNodes(this.els.hearts); // clear
 
-    for (let h = 0; h < this.heartsStart; h++) {
-      const img = document.createElement('img');
-      img.classList.add('heart'); // empty heart
+    if (this.settings.useHearts) {
+      for (let h = 0; h < this.heartsStart; h++) {
+        const img = document.createElement('img');
+        img.classList.add('heart'); // empty heart
 
-      if (h >= this.hearts) {
-        img.src = 'http://localhost:1234/static/images/heart-empty.png';
-      } else {
-        img.src = 'http://localhost:1234/static/images/heart-filled.png';
+        if (h >= this.hearts) {
+          img.src = 'http://localhost:1234/static/images/heart-empty.png';
+        } else {
+          img.src = 'http://localhost:1234/static/images/heart-filled.png';
+        }
+
+        this.els.hearts.appendChild(img); // insert
       }
-
-      this.els.hearts.appendChild(img); // insert
     }
   }
 
@@ -93968,7 +93971,6 @@ class Game {
     _Target.default.clear();
 
     this.els.error.textContent = "🎉 Score: " + this.score;
-    console.log(this.targetsOnscreen);
     const lastTarget = this.targetsOnscreen[0];
 
     const lastChord = _tonal.Chord.get(lastTarget);
@@ -94017,9 +94019,8 @@ class Game {
       notes,
       chords
     } = _ref;
-    // show name of chord immediatley
-    this.els.currentChord.textContent = (chords[0] || '').replace(/(.*)M$/, '$1'); // show chord on music score
 
+    // show chord on music score
     function notesListToABCStr(lst) {
       let x = "";
 
@@ -94044,12 +94045,16 @@ class Game {
       return x;
     }
 
-    var abcString = "X:1\nK:C\n[".concat(notesListToABCStr(notes), "]|\n");
-    (0, _abc_tunebook_svg.default)(this.els.musicScore, abcString, {
-      add_classes: true,
-      // add css classes to all elements
-      scale: 3
-    });
+    if (notes.length > 0) {
+      // show name of chord immediatley
+      this.els.currentChord.textContent = (chords[0] || '').replace(/(.*)M$/, '$1');
+      var abcString = "X:1\nK:".concat(Math.random() < 0.33 ? 'C' : Math.random() < 0.33 ? 'clef=bass' : 'clef=alto', "\n[").concat(notesListToABCStr(notes), "]|\n");
+      (0, _abc_tunebook_svg.default)(this.els.musicScore, abcString, {
+        add_classes: true,
+        // add css classes to all elements
+        scale: 3
+      });
+    }
 
     function get_inversion(chord) {
       if (!chord.includes("/")) {
@@ -94128,7 +94133,9 @@ class Game {
 
 
       if (!wasHit && (notes.length > 0 || chords.length > 0)) {
-        this.lowerHearts();
+        if (this.settings.useHearts) {
+          this.lowerHearts();
+        }
       }
     } // update instrument sound 
 
@@ -94172,7 +94179,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "50722" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "49588" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

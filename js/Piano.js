@@ -15,7 +15,7 @@ export default class Piano {
 		this.synth = new Tone.PolySynth().connect(filter).connect(reverb);
 
 		// load tonejs-instruments sounds
-		const instruments = ['piano', 'bass-electric', 'bassoon', 'cello', 'clarinet', 'contrabass', 'flute', 'french-horn', 'guitar-acoustic', 'guitar-electric','guitar-nylon', 'harmonium', 'harp', 'organ', 'saxophone', 'trombone', 'trumpet', 'tuba', 'violin', 'xylophone']
+		const instruments = ['piano', 'bass-electric', 'bassoon', 'cello', 'clarinet', 'contrabass', 'flute', 'french-horn', 'guitar-acoustic', 'guitar-electric', 'harmonium',  'organ', 'saxophone', 'trombone', 'trumpet', 'tuba', 'violin', ] // + ['xylophone', 'harp', 'guitar-nylon',]
         
         const samples = SampleLibrary.load({
             instruments: instruments,

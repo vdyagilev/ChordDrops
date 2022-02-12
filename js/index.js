@@ -23,7 +23,7 @@ class Game {
 			error: document.querySelector('.error'),
 			info: document.querySelector('.errorInfo'),
 			hearts: document.querySelector('.hearts'),
-			musicScore: document.querySelector('.musicScore')
+			musicScore: document.querySelector('.musicScore'),
 		};
 
 		this.piano = new Piano();
@@ -69,6 +69,7 @@ class Game {
 			].map((o) => o.value),
 			inversions: document.querySelector('#inversions').value === "Active",
 			colorProbability: document.querySelector('#color-prob').value / 100.0,
+			useHearts: document.querySelector('#hearts-checkbox').checked,
 		};
 		this.resetScore();
 		this.resetLevel();
@@ -77,7 +78,9 @@ class Game {
 		this.gameLoop = setTimeout(() => { this.loop() }, this.createTargetRate);
 		
 		this.hearts = this.heartsStart
-		this.drawHearts()
+
+		this.drawHearts()	
+
 		this.targetsOnscreen = []
 
 		this.gameSounds.gong.start();
@@ -95,19 +98,21 @@ class Game {
 		// update display
 		removeAllChildNodes(this.els.hearts) // clear
 
-		for (let h=0; h<this.heartsStart; h++) {
-			const img = document.createElement('img')
-			img.classList.add('heart')
-			
-			// empty heart
-			if (h >= this.hearts) {
-				img.src = 'http://localhost:1234/static/images/heart-empty.png'
-			} else {
-				img.src = 'http://localhost:1234/static/images/heart-filled.png'
-			}
+		if (this.settings.useHearts){
+			for (let h=0; h<this.heartsStart; h++) {
+				const img = document.createElement('img')
+				img.classList.add('heart')
+				
+				// empty heart
+				if (h >= this.hearts) {
+					img.src = 'http://localhost:1234/static/images/heart-empty.png'
+				} else {
+					img.src = 'http://localhost:1234/static/images/heart-filled.png'
+				}
 
-			
-			this.els.hearts.appendChild(img) // insert
+				
+				this.els.hearts.appendChild(img) // insert
+			}
 		}
 	}
 	lowerHearts() {
@@ -148,7 +153,6 @@ class Game {
 		Target.clear();
 
 		this.els.error.textContent = "🎉 Score: " + this.score 
-		console.log(this.targetsOnscreen)
 
 		const lastTarget = this.targetsOnscreen[0]
 		const lastChord = Chord.get(lastTarget)
@@ -198,11 +202,7 @@ class Game {
 	}
 
 	async onChange({ notes, chords }) {
-		// show name of chord immediatley
-		this.els.currentChord.textContent = (chords[0] || '').replace(
-			/(.*)M$/,
-			'$1'
-		);
+		
 
 		// show chord on music score
 		function notesListToABCStr(lst) {
@@ -227,12 +227,20 @@ class Game {
 			}
 			return x
 		}
-		var abcString = `X:1\nK:C\n[${notesListToABCStr(notes)}]|\n`;
+		if (notes.length > 0 ) {
+			// show name of chord immediatley
+			this.els.currentChord.textContent = (chords[0] || '').replace(
+				/(.*)M$/,
+				'$1'
+			);
 
-		renderAbc(this.els.musicScore, abcString, {
-			add_classes: true, // add css classes to all elements
-			scale: 3,
-		});
+			var abcString = `X:1\nK:${ Math.random() < 0.33 ? 'C' : Math.random() < 0.33 ? 'clef=bass' : 'clef=alto'}\n[${notesListToABCStr(notes)}]|\n`;
+
+			renderAbc(this.els.musicScore, abcString, {
+				add_classes: true, // add css classes to all elements
+				scale: 3,
+			});
+		}
 
 		function get_inversion(chord) {
 			if (!chord.includes("/")) {
@@ -313,9 +321,12 @@ class Game {
 				}
 			}
 
+
 			// Subtract a Heart if mistake
 			if (!wasHit && (notes.length >0 || chords.length > 0)) {
-				this.lowerHearts()
+				if (this.settings.useHearts) {
+					this.lowerHearts()
+				}
 			}
 		}
 		// update instrument sound 
