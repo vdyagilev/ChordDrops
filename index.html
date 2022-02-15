@@ -26,6 +26,12 @@
 		
 
 		<form>
+			<label for="game-modes">Game Mode</label>
+			<select name="game-modes" id="game-modes" multiple size=2>
+				<option value="chord">Chords</option>
+				<option value="arpeggio">Arpeggios</option>
+				<option value="scale">Scales</option>
+			</select>
 			<label for="chord-roots">Chord Roots</label>
 			<select name="chord-roots" id="chord-roots" multiple size=2>
 				<option value="C" selected>C</option>
@@ -41,7 +47,7 @@
 				<option value="A#">A#</option>
 				<option value="B">B</option>
 			</select>
-			<label for="chord-complexity">Chord Length</label>
+			<label for="chord-length">Chord Length</label>
 			<select name="chord-length" id="chord-length" >
 				<option value="3">3</option>
 				<option value="4">4</option>

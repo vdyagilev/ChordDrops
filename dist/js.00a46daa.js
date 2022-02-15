@@ -56300,19 +56300,20 @@ class Piano {
   }
 
   start() {
-    // default synth sound
+    // play sounds immediatley (remove delay)
+    Tone.context.lookAhead = 0; // default synth sound
+
     const reverb = new Tone.Reverb().toDestination();
     const filter = new Tone.Filter(500, 'highpass').toDestination();
     this.synth = new Tone.PolySynth().connect(filter).connect(reverb); // load tonejs-instruments sounds
 
-    const instruments = ['piano', 'bass-electric', 'bassoon', 'cello', 'clarinet', 'contrabass', 'flute', 'french-horn', 'guitar-acoustic', 'guitar-electric', 'harmonium', 'organ', 'saxophone', 'trombone', 'trumpet', 'tuba', 'violin']; // + ['xylophone', 'harp', 'guitar-nylon',]
+    const instruments = ['piano', 'bass-electric', 'bassoon', 'cello', 'clarinet', 'contrabass', 'flute', 'french-horn', 'guitar-acoustic', 'guitar-electric', 'harmonium', 'organ', 'saxophone', 'trombone', 'trumpet', 'tuba', 'violin', 'xylophone', 'harp', 'guitar-nylon'];
 
     const samples = _TonejsInstruments.SampleLibrary.load({
       instruments: instruments,
       baseUrl: "http://localhost:1234/static/tonejs-instruments/samples/",
       onload: () => {
         console.log('loaded sounds!');
-        NProgress.done();
       }
     });
 
@@ -75626,7 +75627,10 @@ const colors = {
   "g##": "#e23232"
 }; // avoid these chords
 
-const blacklist = ["69#11", "b9sus"];
+const blacklist = ['b9sus', '69#11'];
+const TARGET_TYPE_CHORD = "chord";
+const TARGET_TYPE_SCALE = "scale";
+const TARGET_TYPE_ARPEGGIO = "arpeggio";
 const complexityFilter = {
   simple: c => ['Major', 'Minor'].includes(c.quality) && c.name,
   intermediate: c => c.name,
@@ -75650,25 +75654,96 @@ const getChordTarget = function getChordTarget() {
   };
 };
 
+const getScaleTarget = function getScaleTarget() {
+  let {
+    chordRoots = ['C']
+  } = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+  const randomNote = chordRoots[Math.floor(Math.random() * chordRoots.length)];
+
+  const validScaleTypes = _tonal.ScaleType.all();
+
+  const randomScale = validScaleTypes[Math.floor(Math.random() * validScaleTypes.length)];
+  return {
+    root: randomNote,
+    scale: randomScale.name
+  };
+};
+
+function randomListItem(items) {
+  return items[Math.floor(Math.random() * items.length)];
+}
+
 class Target {
   static create(settings) {
+    // create random target from game modes
+    let mode = randomListItem(settings.gameModes);
+
+    if (mode === TARGET_TYPE_CHORD) {
+      return this.createChord(settings);
+    } else if (mode === TARGET_TYPE_SCALE) {
+      const scale = this.createScale(settings);
+      return scale;
+    } else if (mode === TARGET_TYPE_ARPEGGIO) {
+      return this.createArpeggio(settings);
+    }
+  }
+
+  static createChord(settings) {
     const {
       root,
       quality
     } = getChordTarget(settings);
-    const existing = Target.all.get(root + quality);
+    const existing = Target.all.filter(t => t.target == root + quality);
 
-    if (existing) {
+    if (existing.length > 0) {
       return;
     }
 
-    const newTarget = new Target(root, quality, settings.speed, null, settings.colorProbability);
-    Target.all.set(newTarget.target, newTarget);
+    let notes = _tonal.Chord.get(root + quality).notes;
+
+    const newTarget = new Target(TARGET_TYPE_CHORD, root, quality, settings.speed, null, settings.colorProbability, notes);
+    Target.all.push(newTarget);
     return newTarget;
   }
 
-  static shoot(chord) {
-    const found = Target.all.get(chord);
+  static createArpeggio(settings) {
+    const {
+      root,
+      quality
+    } = getChordTarget(settings);
+    const existing = Target.all.filter(t => t.target == root + quality);
+
+    if (existing.length > 0) {
+      return;
+    }
+
+    let notes = _tonal.Chord.get(root + quality).notes;
+
+    const newTarget = new Target(TARGET_TYPE_ARPEGGIO, root, quality, settings.speed, null, settings.colorProbability, notes);
+    Target.all.push(newTarget);
+    return newTarget;
+  }
+
+  static createScale(settings) {
+    const {
+      root,
+      scale
+    } = getScaleTarget(settings);
+    const existing = Target.all.filter(t => t.target == scale);
+
+    if (existing.length > 0) {
+      return;
+    }
+
+    let notes = _tonal.Scale.get(root + " " + scale).notes;
+
+    const newTarget = new Target(TARGET_TYPE_SCALE, root, scale, settings.speed, null, settings.colorProbability, notes);
+    Target.all.push(newTarget);
+    return newTarget;
+  }
+
+  static shootChord(chord) {
+    const found = Target.all.filter(t => t.target === chord)[0];
 
     if (found) {
       found.animation.cancel();
@@ -75679,29 +75754,70 @@ class Target {
     return false;
   }
 
+  static shootNotes(notes) {
+    const target = Target.all[0];
+
+    function listInList(a, b) {
+      // Return true if all elements of a are in b, false otherwise
+      for (let i = 0; i < a.length; i++) {
+        if (!b.includes(a[i])) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    function notesInNotesChroma(a, b) {
+      return listInList(a.map(n => _tonal.Note.get(n).chroma), b.map(n => _tonal.Note.get(n).chroma));
+    }
+
+    if (target && (target.type == TARGET_TYPE_ARPEGGIO || target.type == TARGET_TYPE_SCALE)) {
+      target.notesShot = target.notesShot.concat(notes);
+
+      if (notesInNotesChroma(target.notes, target.notesShot)) {
+        target.animation.cancel();
+        target.remove();
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   static clear() {
-    for (let target of Target.all.values()) {
+    for (let target of Target.all) {
       target.animation.cancel();
       target.remove();
     }
   }
 
-  constructor(root, quality, speed, onFall, colorProbability) {
+  constructor(type, root, quality, speed, onFall, colorProbability, notes) {
     this.root = root;
     this.quality = quality;
     this.target = root + quality;
     this.speed = speed;
-    this.colorProbability = colorProbability;
-    this.render();
+    this.colorProbability = colorProbability; // allows Target to be type: "chord", "arpeggio", or "scale"
+
+    this.type = type;
+    this.notes = notes;
+    this.notesShot = [];
+
+    if (this.type == TARGET_TYPE_CHORD) {
+      this.renderChord();
+    } else {
+      this.renderNotes();
+    }
+
     this.invaded = this.animation.finished;
   }
 
   remove() {
     this.el.parentElement.removeChild(this.el);
-    Target.all.delete(this.target);
+    Target.all = Target.all.filter(t => t.target != this.target);
   }
 
-  async render() {
+  async renderChord() {
     const targetEl = document.createElement('div');
 
     if (this.quality === 'M') {
@@ -75711,7 +75827,7 @@ class Target {
     }
 
     targetEl.classList.add('target');
-    targetEl.style.left = Math.floor(Math.random() * (document.body.offsetWidth - targetEl.clientWidth - 50)) + 'px';
+    targetEl.style.left = Math.floor(Math.random() * (document.body.offsetWidth - targetEl.clientWidth - 120)) + 'px';
     Target.targetsEl.appendChild(targetEl);
     this.animation = targetEl.animate([{
       transform: 'translateY(0)'
@@ -75769,11 +75885,60 @@ class Target {
     }
   }
 
+  async renderNotes() {
+    const targetEl = document.createElement('div');
+
+    if (this.quality === 'M') {
+      targetEl.innerHTML = "<div class=\"target__root\">".concat(this.root, "</div>");
+    } else {
+      targetEl.innerHTML = "<div class=\"target__root\">".concat(this.root, "</div><div class=\"target__quality\">").concat(this.quality, "</div>");
+    }
+
+    targetEl.classList.add('target');
+    targetEl.style.left = Math.floor(Math.random() * (document.body.offsetWidth - targetEl.clientWidth - 450)) + 300 + 'px';
+    Target.targetsEl.appendChild(targetEl);
+    this.animation = targetEl.animate([{
+      transform: 'translateY(0)'
+    }, {
+      transform: "translateY(calc(100vh - ".concat(targetEl.clientHeight + 2, "px)")
+    }], {
+      // timing options
+      duration: parseInt(this.speed),
+      fill: 'forwards'
+    });
+    this.el = targetEl; // custom styling css : add note specific color
+
+    targetEl.style.borderRadius = '0%'; // make square not circle
+
+    targetEl.style.padding = '20px 50px';
+    let notes = this.notes;
+
+    if (Math.random() < this.colorProbability) {
+      // make box of colored squares (rep'nting notes ) and render below target name
+      const paletteEl = document.createElement('div');
+      paletteEl.classList.add('targetNotesPalette');
+
+      for (let n = 0; n < notes.length; n++) {
+        const note = notes[n];
+
+        const color = colors[_tonal.Note.enharmonic(note).toLowerCase()]; //const isHit = this.notesShot.map(n => Note.get(n).chroma).includes(Note.get(note).chroma)
+
+
+        let noteEl = document.createElement('div');
+        noteEl.classList.add('targetPaletteEl');
+        noteEl.style.backgroundColor = color;
+        paletteEl.appendChild(noteEl);
+      }
+
+      targetEl.appendChild(paletteEl);
+    }
+  }
+
 }
 
 exports.default = Target;
 
-_defineProperty(Target, "all", new Map());
+_defineProperty(Target, "all", []);
 
 _defineProperty(Target, "targetsEl", document.querySelector('.targets'));
 },{"@tonaljs/tonal":"node_modules/@tonaljs/tonal/dist/index.es.js","lodash":"node_modules/lodash/lodash.js"}],"node_modules/abcjs/version.js":[function(require,module,exports) {
@@ -93867,9 +94032,7 @@ class Game {
 
     this.gameLoop = null;
     this.hearts = 3;
-    this.heartsStart = 3; // store all targets on screen in list
-
-    this.targetsOnscreen = []; // load game sounds
+    this.heartsStart = 3; // load game sounds
 
     this.gameSounds = {
       "success": new Tone.Player("http://localhost:1234/static/sounds/success.mp3").toDestination(),
@@ -93886,6 +94049,7 @@ class Game {
     this.gameOn = true;
     document.body.classList.add('started');
     this.settings = {
+      gameModes: [...document.querySelector('#game-modes').selectedOptions].map(o => o.value),
       chordLength: document.querySelector('#chord-length').value,
       chordComplexity: document.querySelector('#chord-complexity').value,
       speed: document.querySelector('#chord-pace').value,
@@ -93903,7 +94067,6 @@ class Game {
     }, this.createTargetRate);
     this.hearts = this.heartsStart;
     this.drawHearts();
-    this.targetsOnscreen = [];
     this.gameSounds.gong.start();
     this.changeBackgroundColor();
   }
@@ -93954,9 +94117,8 @@ class Game {
 
   async createTarget() {
     try {
-      const target = _Target.default.create(this.settings);
+      const target = _Target.default.create(this.settings); // upon touching ground game over
 
-      this.targetsOnscreen = this.targetsOnscreen.concat([target.target]); // upon touching ground game over
 
       await target.invaded;
       this.gameOver();
@@ -93971,15 +94133,14 @@ class Game {
     _Target.default.clear();
 
     this.els.error.textContent = "🎉 Score: " + this.score;
-    const lastTarget = this.targetsOnscreen[0];
+    const lastTarget = _Target.default.all[0];
 
-    const lastChord = _tonal.Chord.get(lastTarget);
+    const lastChord = _tonal.Chord.get(lastTarget.target);
 
     this.els.info.textContent = "The 💀 chord was " + lastChord.symbol + " [" + lastChord.notes + "]" + " [" + lastChord.intervals + "]";
     this.resetScore();
     this.resetLevel();
     this.hearts = this.heartsStart;
-    this.targetsOnscreen = [];
     this.createTargetRate = 5000;
     clearTimeout(this.gameLoop);
   }
@@ -94061,73 +94222,58 @@ class Game {
         return chord;
       }
 
-      function isLetter(c) {
-        return c.toLowerCase() != c.toUpperCase();
-      }
-
       const chars = chord.split("/");
+      const lastChar = chars[chars.length - 1]; // console.log(`last char: ${lastChar} note: ${Note.get(lastChar).chroma}`)
 
-      if (isLetter(chars[chars.length - 1])) {
-        return chars.slice(0, chars.length - 1).join("");
+      if (_tonal.Note.get(lastChar).chroma >= 0) {
+        // remove slash chord from chord name 
+        return chord.slice(0, -(lastChar.length + 1));
       } else {
         return chord;
       }
     }
 
     if (this.gameOn) {
-      var wasHit = false;
-      var hitName = null;
+      let wasHit = false; // Shoot chords
 
-      for (var c = 0; c < chords.length; c++) {
-        const chord = chords[c];
-        wasHit = _Target.default.shoot(chord);
+      if (this.settings.gameModes.includes("chord")) {
+        for (var c = 0; c < chords.length; c++) {
+          const chord = chords[c]; // Check chord given for a hit
 
-        if (wasHit) {
-          hitName = chord;
-        }
+          wasHit = _Target.default.shootChord(chord);
 
-        var inversionHit = false; // shoot all chord inversions too
-
-        if (this.settings.inversions) {
-          const inversion = get_inversion(chord);
-          inversionHit = _Target.default.shoot(inversion);
-
-          if (inversionHit) {
-            hitName = inversion;
-          }
-        }
-
-        if (this.settings.inversions && inversionHit) {
-          wasHit = true;
-        } // Successfull hit
-
-
-        if (wasHit) {
-          this.gameSounds.success.start();
-          this.incrementScore(); // Increase createTargetRate by 10% if user scored 10 points
-          // Stop increasing when a rate of 100ms is reached
-
-          if (this.score > 0 && this.score % 10 == 0 && this.createTargetRate > 100) {
-            this.incrementLevel();
-          } // remove from list
-
-
-          let idx = -1;
-
-          for (let t = 0; t < this.targetsOnscreen.length; t++) {
-            if (this.targetsOnscreen[t] === hitName) {
-              // first hit target
-              idx = t;
-              break;
+          if (!wasHit) {
+            // shoot all chord inversions too
+            if (this.settings.inversions) {
+              const inversion = get_inversion(chord);
+              wasHit = _Target.default.shootChord(inversion);
             }
-          }
+          } // if chord hit then break loop and update game
 
-          if (idx > -1) {
-            // pop
-            const hitTarget = this.targetsOnscreen.splice(idx, 1); // 2nd parameter means remove one item only
-          }
 
-          break;
+          if (wasHit) {
+            break;
+          }
+        }
+      } // Shoot notes
+
+
+      if (this.settings.gameModes.includes("arpeggio")) {
+        wasHit = _Target.default.shootNotes(notes);
+      }
+
+      if (this.settings.gameModes.includes("scale")) {
+        wasHit = _Target.default.shootNotes(notes);
+      } // Successfull hit
+
+
+      if (wasHit) {
+        this.gameSounds.success.start();
+        this.incrementScore(); // Increase createTargetRate by 10% if user scored 10 points
+        // Stop increasing when a rate of 100ms is reached
+
+        if (this.score > 0 && this.score % 10 == 0 && this.createTargetRate > 100) {
+          this.incrementLevel();
         }
       } // Subtract a Heart if mistake
 
@@ -94142,7 +94288,7 @@ class Game {
 
     if (notes.length > 0 || chords.length > 0) {
       // update instrument sound randomly
-      if (Math.random() < 0.33) {
+      if (Math.random() < 0.5) {
         this.piano.instrumentCurrent = this.piano.getRandomInstrument();
       }
     }
@@ -94179,7 +94325,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "49588" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "53254" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

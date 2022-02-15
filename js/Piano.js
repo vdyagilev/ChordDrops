@@ -9,27 +9,29 @@ export default class Piano {
 	}
 
 	start() {
+		// play sounds immediatley (remove delay)
+		Tone.context.lookAhead = 0
+
 		// default synth sound
 		const reverb = new Tone.Reverb().toDestination();
 		const filter = new Tone.Filter(500, 'highpass').toDestination();
 		this.synth = new Tone.PolySynth().connect(filter).connect(reverb);
 
 		// load tonejs-instruments sounds
-		const instruments = ['piano', 'bass-electric', 'bassoon', 'cello', 'clarinet', 'contrabass', 'flute', 'french-horn', 'guitar-acoustic', 'guitar-electric', 'harmonium',  'organ', 'saxophone', 'trombone', 'trumpet', 'tuba', 'violin', ] // + ['xylophone', 'harp', 'guitar-nylon',]
+		const instruments = ['piano', 'bass-electric', 'bassoon', 'cello', 'clarinet', 'contrabass', 'flute', 'french-horn', 'guitar-acoustic', 'guitar-electric', 'harmonium',  'organ', 'saxophone', 'trombone', 'trumpet', 'tuba', 'violin', 'xylophone', 'harp', 'guitar-nylon',]
         
         const samples = SampleLibrary.load({
             instruments: instruments,
 			baseUrl: "http://localhost:1234/static/tonejs-instruments/samples/",
 			onload: () => {
 				console.log('loaded sounds!'); 
-				NProgress.done();
 			}
         })
 		
 		this.instruments = instruments
 		this.samples = samples
 		this.instrumentCurrent = this.getRandomInstrument()
-		
+
 		Tone.start();
 
 		// const sampler = new Tone.Sampler({

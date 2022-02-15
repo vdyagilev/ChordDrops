@@ -202,7 +202,9 @@ option {
 .target {
 	width: 70px;
 	text-align: center;
-	background-color:#3498db; 
+	background-color:#f3f9ff;
+	border-width: 2px;
+	border-color: #333;
 	font-family: monospace;
 	border-radius: 50%;
 	height: 70px;
@@ -211,7 +213,17 @@ option {
 	align-content: center;
 	position: absolute;
 	z-index:1000;
-	padding: 7px;
+	padding: 15px;
+}
+
+.targetNotesPalette {
+	display: flex;
+	flex-direction: row;
+}
+
+.targetPaletteEl {
+	height: 50px;
+	width: 50px;
 }
 
 .target__root {
