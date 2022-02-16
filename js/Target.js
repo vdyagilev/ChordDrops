@@ -288,8 +288,8 @@ export default class Target {
 		let notes = Chord.get(this.target).notes
 		// remove root
 		notes = notes.filter(n => n != tonic)
-		// shuffle notes in chord to get random inversion
-		notes = shuffle(notes) 
+		// // shuffle notes in chord to get random inversion
+		// notes = shuffle(notes) 
 
 		if (Math.random() < this.colorProbability) {
 			// add a colored border for every non-root note in chord
@@ -320,7 +320,7 @@ export default class Target {
 		targetEl.classList.add('target');
 		targetEl.style.left =
 			Math.floor(
-				Math.random() * (document.body.offsetWidth - targetEl.clientWidth - 450)
+				Math.random() * (document.body.offsetWidth - targetEl.clientWidth - 650)
 			) + 300 + 'px';
 		Target.targetsEl.appendChild(targetEl);
 		this.animation = targetEl.animate(

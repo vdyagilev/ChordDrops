@@ -75864,9 +75864,8 @@ class Target {
     let notes = _tonal.Chord.get(this.target).notes; // remove root
 
 
-    notes = notes.filter(n => n != tonic); // shuffle notes in chord to get random inversion
-
-    notes = (0, _lodash.shuffle)(notes);
+    notes = notes.filter(n => n != tonic); // // shuffle notes in chord to get random inversion
+    // notes = shuffle(notes) 
 
     if (Math.random() < this.colorProbability) {
       // add a colored border for every non-root note in chord
@@ -75895,7 +75894,7 @@ class Target {
     }
 
     targetEl.classList.add('target');
-    targetEl.style.left = Math.floor(Math.random() * (document.body.offsetWidth - targetEl.clientWidth - 450)) + 300 + 'px';
+    targetEl.style.left = Math.floor(Math.random() * (document.body.offsetWidth - targetEl.clientWidth - 650)) + 300 + 'px';
     Target.targetsEl.appendChild(targetEl);
     this.animation = targetEl.animate([{
       transform: 'translateY(0)'
@@ -94028,7 +94027,8 @@ class Game {
       onError: this.onError.bind(this)
     });
     this.els.startButton.addEventListener('click', this.start.bind(this));
-    this.createTargetRate = 5000; // start at 5 seconds
+    this.createTargetRateStart = 5000;
+    this.currentCreateTargetRate = this.createTargetRateStart; // start at 5 seconds
 
     this.gameLoop = null;
     this.hearts = 3;
@@ -94064,7 +94064,7 @@ class Game {
     this.createTarget();
     this.gameLoop = setTimeout(() => {
       this.loop();
-    }, this.createTargetRate);
+    }, this.currentCreateTargetRate);
     this.hearts = this.heartsStart;
     this.drawHearts();
     this.gameSounds.gong.start();
@@ -94112,7 +94112,7 @@ class Game {
     this.createTarget();
     this.gameLoop = setTimeout(() => {
       this.loop();
-    }, this.createTargetRate);
+    }, this.currentCreateTargetRate);
   }
 
   async createTarget() {
@@ -94126,6 +94126,7 @@ class Game {
   }
 
   gameOver() {
+    clearTimeout(this.gameLoop);
     this.gameOn = false;
     this.gameSounds.gameover.start();
     document.body.classList.remove('started');
@@ -94141,8 +94142,7 @@ class Game {
     this.resetScore();
     this.resetLevel();
     this.hearts = this.heartsStart;
-    this.createTargetRate = 5000;
-    clearTimeout(this.gameLoop);
+    this.currentCreateTargetRate = this.createTargetRateStart;
   }
 
   incrementScore() {
@@ -94162,12 +94162,17 @@ class Game {
     this.drawHearts();
     this.level++;
     this.els.level.textContent = this.level;
-    this.createTargetRate = this.createTargetRate * 0.9;
+    this.currentCreateTargetRate = this.currentCreateTargetRate * 0.95;
   }
 
   resetLevel() {
     this.level = 1;
     this.els.level.textContent = this.level;
+    this.currentCreateTargetRate = this.createTargetRateStart;
+
+    _Target.default.clear();
+
+    _Target.default.all = [];
   }
 
   onError(error) {
@@ -94258,11 +94263,11 @@ class Game {
       } // Shoot notes
 
 
-      if (this.settings.gameModes.includes("arpeggio")) {
+      if (!wasHit && this.settings.gameModes.includes("arpeggio")) {
         wasHit = _Target.default.shootNotes(notes);
       }
 
-      if (this.settings.gameModes.includes("scale")) {
+      if (!wasHit && this.settings.gameModes.includes("scale")) {
         wasHit = _Target.default.shootNotes(notes);
       } // Successfull hit
 
@@ -94272,7 +94277,7 @@ class Game {
         this.incrementScore(); // Increase createTargetRate by 10% if user scored 10 points
         // Stop increasing when a rate of 100ms is reached
 
-        if (this.score > 0 && this.score % 10 == 0 && this.createTargetRate > 100) {
+        if (this.score > 0 && this.score % 10 == 0 && this.currentCreateTargetRate > 100) {
           this.incrementLevel();
         }
       } // Subtract a Heart if mistake
@@ -94288,7 +94293,7 @@ class Game {
 
     if (notes.length > 0 || chords.length > 0) {
       // update instrument sound randomly
-      if (Math.random() < 0.5) {
+      if (Math.random() < 0.33) {
         this.piano.instrumentCurrent = this.piano.getRandomInstrument();
       }
     }
@@ -94325,7 +94330,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "53254" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "50028" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

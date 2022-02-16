@@ -6,13 +6,14 @@
   "scripts": {
     "dev": "parcel index.html",
     "build": "parcel build index.html",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "heroku-postbuild": "parcel build index.html"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "eslint": "^7.19.0",
-    "parcel-bundler": "^1.12.4",
+    "parcel-bundler": "^1.12.5",
     "parcel-plugin-static-files-copy": "^2.6.0",
     "prettier": "^2.2.1"
   },

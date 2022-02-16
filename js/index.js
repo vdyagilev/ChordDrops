@@ -34,7 +34,8 @@ class Game {
 			onError: this.onError.bind(this),
 		});
 		this.els.startButton.addEventListener('click', this.start.bind(this));
-		this.createTargetRate = 5000; // start at 5 seconds
+		this.createTargetRateStart = 5000
+		this.currentCreateTargetRate = this.createTargetRateStart; // start at 5 seconds
 		this.gameLoop = null;
 
 		this.hearts = 3
@@ -75,7 +76,7 @@ class Game {
 		this.resetLevel();
 		this.piano.start();
 		this.createTarget();
-		this.gameLoop = setTimeout(() => { this.loop() }, this.createTargetRate);
+		this.gameLoop = setTimeout(() => { this.loop() }, this.currentCreateTargetRate);
 		
 		this.hearts = this.heartsStart
 
@@ -126,7 +127,7 @@ class Game {
 
 	async loop() {
 		this.createTarget();
-		this.gameLoop = setTimeout(() => { this.loop() }, this.createTargetRate);
+		this.gameLoop = setTimeout(() => { this.loop() }, this.currentCreateTargetRate);
 	}
 
 	async createTarget() {
@@ -143,6 +144,8 @@ class Game {
 	}
 
 	gameOver() {
+		clearTimeout(this.gameLoop);
+
 		this.gameOn = false
 		this.gameSounds.gameover.start()
 
@@ -160,9 +163,7 @@ class Game {
 		this.resetLevel();
 		this.hearts = this.heartsStart
 
-		this.createTargetRate = 5000;
-
-		clearTimeout(this.gameLoop);
+		this.currentCreateTargetRate = this.createTargetRateStart
 	}
 
 	incrementScore() {
@@ -184,12 +185,16 @@ class Game {
 
 		this.level++;
 		this.els.level.textContent = this.level;
-		this.createTargetRate = this.createTargetRate * 0.9;
+		this.currentCreateTargetRate = this.currentCreateTargetRate * 0.95;
 	}
 
 	resetLevel() {
 		this.level = 1;
 		this.els.level.textContent = this.level;
+		this.currentCreateTargetRate = this.createTargetRateStart
+		
+		Target.clear();
+		Target.all = []
 	}
 
 	onError(error) {
@@ -286,11 +291,11 @@ class Game {
 			}
 
 			// Shoot notes
-			if (this.settings.gameModes.includes("arpeggio")) {
+			if (!wasHit && this.settings.gameModes.includes("arpeggio")) {
 				wasHit = Target.shootNotes(notes) 
 			}
 
-			if (this.settings.gameModes.includes("scale")) {
+			if (!wasHit && this.settings.gameModes.includes("scale")) {
 				wasHit = Target.shootNotes(notes)
 			}
 
@@ -306,7 +311,7 @@ class Game {
 				if (
 					this.score > 0 &&
 					this.score % 10 == 0 &&
-					this.createTargetRate > 100
+					this.currentCreateTargetRate > 100
 				) {
 					this.incrementLevel();
 				}
@@ -326,7 +331,7 @@ class Game {
 	
 		if (notes.length >0 || chords.length > 0) {
 			// update instrument sound randomly
-			if (Math.random() < 0.5) {
+			if (Math.random() < 0.33) {
 				this.piano.instrumentCurrent = this.piano.getRandomInstrument()
 			} 
 		}
