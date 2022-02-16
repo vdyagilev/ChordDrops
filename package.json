@@ -7,7 +7,6 @@
     "dev": "parcel index.html",
     "build": "parcel build index.html",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "heroku-postbuild": "parcel build index.html"
   },
   "author": "",
   "license": "ISC",
