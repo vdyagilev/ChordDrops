@@ -12,6 +12,30 @@ function removeAllChildNodes(parent) {
     }
 }
 
+// show chord on music score
+export function notesListToABCStr(lst) {
+	let x = "" 
+	for (let i=0; i<lst.length; i++) {
+		let note = lst[i]
+		
+		// convert accidentals
+		while (note.includes('#')) {
+			// move accidental to front of note
+			note = note.replace('#', '')
+			note = '^' + note
+		}
+
+		while (note.includes('b')) {
+			// move accidental to front of note
+			note = note.replace('b', '')
+			note = '_' + note
+		}
+
+		x = x + note
+	}
+	return x
+}
+
 class Game {
 	constructor() {
 		this.els = {
@@ -204,30 +228,6 @@ class Game {
 
 	async onChange({ notes, chords }) {
 		
-
-		// show chord on music score
-		function notesListToABCStr(lst) {
-			let x = "" 
-			for (let i=0; i<lst.length; i++) {
-				let note = lst[i]
-				
-				// convert accidentals
-				while (note.includes('#')) {
-					// move accidental to front of note
-					note = note.replace('#', '')
-					note = '^' + note
-				}
-
-				while (note.includes('b')) {
-					// move accidental to front of note
-					note = note.replace('b', '')
-					note = '_' + note
-				}
-
-				x = x + note
-			}
-			return x
-		}
 		if (notes.length > 0 ) {
 			// show name of chord immediatley
 			this.els.currentChord.textContent = (chords[0] || '').replace(
@@ -235,6 +235,8 @@ class Game {
 				'$1'
 			);
 
+			// Draw chord on score
+			
 			var abcString = `X:1\nK:${ Math.random() < 0.33 ? 'C' : Math.random() < 0.33 ? 'clef=bass' : 'clef=alto'}\n[${notesListToABCStr(notes)}]|\n`;
 
 			renderAbc(this.els.musicScore, abcString, {
@@ -291,6 +293,7 @@ class Game {
 			}
 
 			// Shoot notes
+			// if (notes.length == 1) {
 			if (!wasHit && this.settings.gameModes.includes("arpeggio")) {
 				wasHit = Target.shootNotes(notes) 
 			}
@@ -298,6 +301,7 @@ class Game {
 			if (!wasHit && this.settings.gameModes.includes("scale")) {
 				wasHit = Target.shootNotes(notes)
 			}
+			// }
 
 				
 			// Successfull hit
@@ -331,7 +335,7 @@ class Game {
 	
 		if (notes.length >0 || chords.length > 0) {
 			// update instrument sound randomly
-			if (Math.random() < 0.33) {
+			if (Math.random() < 0.5) {
 				this.piano.instrumentCurrent = this.piano.getRandomInstrument()
 			} 
 		}

@@ -200,6 +200,7 @@ option {
 }
 
 .target {
+	height: 70px;
 	width: 70px;
 	text-align: center;
 	background-color:#f3f9ff;
@@ -214,6 +215,17 @@ option {
 	position: absolute;
 	z-index:1000;
 	padding: 15px;
+	
+
+}
+
+
+.targetScoreDiv {
+	width: calc(var(--numCols) * 50px + 200px) ;
+	background-color: white;
+	position: absolute;
+	margin-top: 125px;
+	box-shadow: 7px 7px 30px;
 }
 
 .targetNotesPalette {

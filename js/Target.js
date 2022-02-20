@@ -1,5 +1,7 @@
 import { Note, Key, ChordType, Chord, Scale, ScaleType } from '@tonaljs/tonal';
+import { renderAbc } from 'abcjs';
 import { shuffle } from 'lodash';
+import { notesListToABCStr } from '.';
 
 const colors = {
 	"a": "#e23232",
@@ -286,28 +288,51 @@ export default class Target {
 		}
 
 		let notes = Chord.get(this.target).notes
-		// remove root
-		notes = notes.filter(n => n != tonic)
+		
 		// // shuffle notes in chord to get random inversion
 		// notes = shuffle(notes) 
 
-		if (Math.random() < this.colorProbability) {
-			// add a colored border for every non-root note in chord
-			let boxShadow = ""
-			
-			for (let n=0; n<notes.length; n++) {
-				boxShadow = boxShadow + `0 0 0 ${(n+1)*15}px ${colors[Note.enharmonic(notes[n]).toLowerCase()]}, `
-			}
-			
-			// add outside-most black border
-			boxShadow = boxShadow + `0 0 0 ${(notes.length*15)-12}px ${'rgb(0, 0, 0, 0.5)'}`
+		// 50% chance to draw as colors/ 50% chance as score
+		if (Math.random() > 0.5) {
+			// remove root
+			notes = notes.filter(n => n != tonic)
+			// draw as colors
+			if (Math.random() < this.colorProbability) { 
+				// add a colored border for every non-root note in chord
+				let boxShadow = ""
+				
+				for (let n=0; n<notes.length; n++) {
+					boxShadow = boxShadow + `0 0 0 ${(n+1)*15}px ${colors[Note.enharmonic(notes[n]).toLowerCase()]}, `
+				}
+				
+				// add outside-most black border
+				boxShadow = boxShadow + `0 0 0 ${(notes.length*15)-12}px ${'rgb(0, 0, 0, 0.5)'}`
 
-			// boxShadow = boxShadow.slice(0, boxShadow.length-2)
-			targetEl.style.boxShadow = boxShadow
+				// boxShadow = boxShadow.slice(0, boxShadow.length-2)
+				targetEl.style.boxShadow = boxShadow
+			}
+			else {
+				targetEl.style.boxShadow = 	`0 0 0 ${3}px ${'rgb(0, 0, 0, 0.5)'}`
+			}
+		} else {
+			let scoreDiv = document.createElement('div')
+			scoreDiv.classList.add('targetScoreDiv')
+
+			// draw as score
+			var abcString = `X:1\nK:${ Math.random() < 0.33 ? 'C' : Math.random() < 0.33 ? 'clef=bass' : 'clef=alto'}\n[${notesListToABCStr(notes)}]|\n`;
+
+			// add num of cols as parameter to css
+			scoreDiv.style +=`;--numCols: ${1};`
+
+			renderAbc(scoreDiv, abcString, {
+				add_classes: true, // add css classes to all elements
+				scale: 1.5,
+			});
+
+			targetEl.appendChild(scoreDiv)
 		}
-		else {
-			targetEl.style.boxShadow = 	`0 0 0 ${3}px ${'rgb(0, 0, 0, 0.5)'}`
-		}
+
+		
 	}
 
 	async renderNotes() {
@@ -345,24 +370,45 @@ export default class Target {
 			
 		let notes = this.notes;
 		
-		if (Math.random() < this.colorProbability) {
-			// make box of colored squares (rep'nting notes ) and render below target name
-			const paletteEl = document.createElement('div');
-			paletteEl.classList.add('targetNotesPalette')
+		// 50% chance to draw as colors and 50% as music score
+		if (Math.random () < 0.5) {
 
-			for (let n=0; n<notes.length; n++) {
-				const note = notes[n]
-				const color = colors[Note.enharmonic(note).toLowerCase()]
-				//const isHit = this.notesShot.map(n => Note.get(n).chroma).includes(Note.get(note).chroma)
+			if (Math.random() < this.colorProbability) {
+				// make box of colored squares (rep'nting notes ) and render below target name
+				const paletteEl = document.createElement('div');
+				paletteEl.classList.add('targetNotesPalette')
 
-				let noteEl = document.createElement('div');
-				noteEl.classList.add('targetPaletteEl')
-				noteEl.style.backgroundColor = color
+				for (let n=0; n<notes.length; n++) {
+					const note = notes[n]
+					const color = colors[Note.enharmonic(note).toLowerCase()]
+					//const isHit = this.notesShot.map(n => Note.get(n).chroma).includes(Note.get(note).chroma)
 
-				paletteEl.appendChild(noteEl)			
+					let noteEl = document.createElement('div');
+					noteEl.classList.add('targetPaletteEl')
+					noteEl.style.backgroundColor = color
+
+					paletteEl.appendChild(noteEl)			
+				}
+				
+				targetEl.appendChild(paletteEl)
 			}
-			
-			targetEl.appendChild(paletteEl)
+		} else {
+			let scoreDiv = document.createElement('div')
+			scoreDiv.classList.add('targetScoreDiv')
+
+			// draw as score
+			var abcString = `X:1\nK:${ Math.random() < 0.33 ? 'C' : Math.random() < 0.33 ? 'clef=bass' : 'clef=alto'}\n${notesListToABCStr(notes)}|\n`;
+
+			// add num of cols as parameter to css
+			scoreDiv.style +=`;--numCols: ${notes.length};`
+
+			renderAbc(scoreDiv, abcString, {
+				add_classes: true, // add css classes to all elements
+				scale: 1.5,
+			});
+
+			targetEl.appendChild(scoreDiv)
 		}
+
 	}
 }
