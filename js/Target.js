@@ -229,15 +229,6 @@ export default class Target {
 		return newTarget;
 	}
 
-	static shootChord(chord) {
-		const found = Target.all.filter(t => t.target === chord)[0];
-		if (found) {
-			found.animation.cancel();
-			found.remove();
-			return true;
-		}
-		return false;
-	}
 
 	static shootNotes(notes) {
 		const target = Target.all[0]
@@ -250,6 +241,14 @@ export default class Target {
 				target.remove();
 				return true;
 			}
+		} else if (target && target.type == TARGET_TYPE_CHORD) {
+			// check if equivalent notes submitted
+			if (notesInNotesChroma(target.notes, notes) && notesInNotesChroma(notes, target.notes)) {
+				target.animation.cancel();
+				target.remove();
+				return true;
+			}
+
 		}
 		return false;
 	}

@@ -136,8 +136,8 @@ class Game {
 		if (this.settings.playInModes) {
 			// random new scale
 			const fromScales = ScaleType.names()
-			this.settings.scaleMode = "major pentatonic" //randomListItem(fromScales)
-			this.settings.modeKey = "C" //randomListItem(this.settings.chordRoots)
+			this.settings.scaleMode = randomListItem(fromScales)
+			this.settings.modeKey = randomListItem(this.settings.chordRoots)
 			const scale = Scale.get(`${this.settings.modeKey} ${this.settings.scaleMode}`)
 
 			// update dom
@@ -176,19 +176,19 @@ class Game {
 			clearTimeout(this.playInstrumentsProcess)
 			this.instruments = [this.piano.getRandomInstrument(), this.piano.getRandomInstrument()]
 			
-			const durInterval = 3000
+			const durInterval = 1000
 			this.playInstrumentsProcess = setInterval(() => {
 				// play bass note
-				const bassOctave = 2
+				const bassOctave = randomListItem([1, 2])
 				this.instruments[0].triggerAttack(Note.enharmonic(this.settings.modeKey)+bassOctave, Tone.now())
 				this.instruments[0].triggerRelease(Note.enharmonic(this.settings.modeKey)+bassOctave, Tone.now() + durInterval)
 				
 				// play scale
 				// pick direction
-				const scaleOctave = 4
-				const notesToPlay = Math.random > 0.5 ? scale.notes : scale.notes.reverse()
+				const scaleOctave = randomListItem([3, 4, 5, 6])
+				const notesToPlay = Math.random > 0.5 ? scale.notes : [].concat(scale.notes).reverse()
 				for (let i=0; i< scale.notes.length; i++) {
-					const dur = durInterval /1000 / scale.notes.length
+					const dur = durInterval / 1000 / scale.notes.length
 
 					this.instruments[1].triggerAttack(Note.enharmonic(notesToPlay[i])+scaleOctave, Tone.now()+ dur*i)
 					this.instruments[1].triggerRelease(Note.enharmonic(notesToPlay[i])+scaleOctave, Tone.now() + dur*i + dur)
@@ -269,6 +269,7 @@ class Game {
 		this.resetScore();
 		this.resetLevel();
 		this.hearts = this.heartsStart
+		clearTimeout(this.playInstrumentsProcess)
 
 		this.currentCreateTargetRate = this.createTargetRateStart
 	}
@@ -358,23 +359,7 @@ class Game {
 			
 			// Shoot chords
 			if (this.settings.gameModes.includes("chord")) {
-				for (var c=0; c<chords.length; c++) {
-					const chord = chords[c]
-
-					// Check chord given for a hit
-					wasHit = Target.shootChord(chord) 
-					if (!wasHit) {
-						// shoot all chord inversions too
-						if (this.settings.inversions) {
-							const inversion = get_inversion(chord)
-							wasHit = Target.shootChord(inversion)
-						}
-					}
-					// if chord hit then break loop and update game
-					if (wasHit) {
-						break
-					}
-				}
+				wasHit = Target.shootNotes(notes)
 			}
 
 			// Shoot notes
