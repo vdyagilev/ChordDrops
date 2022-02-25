@@ -6,9 +6,7 @@ import { SampleLibrary } from '../static/tonejs-instruments/Tonejs-Instruments';
 export default class Piano {
 	constructor() {
 		this.display = document.querySelector('.piano');
-	}
 
-	start() {
 		// play sounds immediatley (remove delay)
 		Tone.context.lookAhead = 0
 
@@ -32,6 +30,10 @@ export default class Piano {
 		this.samples = samples
 		this.instrumentCurrent = this.getRandomInstrument()
 
+	}
+
+	start() {
+		
 		Tone.start();
 
 		// const sampler = new Tone.Sampler({

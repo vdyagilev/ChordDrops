@@ -1,7 +1,7 @@
 import MIDIInput from './MIDIInput';
 import Piano from './Piano';
-import Target from './Target';
-import { Note, Key, ChordType, Chord } from '@tonaljs/tonal';
+import Target, { colors } from './Target';
+import { Note, Key, ChordType, Chord, ScaleType, Scale } from '@tonaljs/tonal';
 import * as Tone from 'tone';
 import abcjs from 'abcjs'
 import renderAbc from 'abcjs/src/api/abc_tunebook_svg';
@@ -36,6 +36,10 @@ export function notesListToABCStr(lst) {
 	return x
 }
 
+export function randomListItem(items) {
+	return items[Math.floor(Math.random()*items.length)];
+}
+
 class Game {
 	constructor() {
 		this.els = {
@@ -48,6 +52,7 @@ class Game {
 			info: document.querySelector('.errorInfo'),
 			hearts: document.querySelector('.hearts'),
 			musicScore: document.querySelector('.musicScore'),
+			scaleModeInfo: document.querySelector('.scaleModeInfo')
 		};
 
 		this.piano = new Piano();
@@ -76,6 +81,9 @@ class Game {
 		this.changeBackgroundColor()
 
 		this.gameOn = false
+
+		this.instruments = [null, null]
+		this.playInstrumentsProcess = null
 	}
 
 	start() {
@@ -95,7 +103,13 @@ class Game {
 			inversions: document.querySelector('#inversions').value === "Active",
 			colorProbability: document.querySelector('#color-prob').value / 100.0,
 			useHearts: document.querySelector('#hearts-checkbox').checked,
+			playInModes: document.querySelector('#modes-checkbox').checked,
+			scaleMode: null,
+			modeKey: null,
 		};
+		if (this.settings.playInModes) {
+			this.changeScaleMode()
+		}
 		this.resetScore();
 		this.resetLevel();
 		this.piano.start();
@@ -108,6 +122,8 @@ class Game {
 
 		this.gameSounds.gong.start();
 		this.changeBackgroundColor()
+
+	
 	}
 
 	changeBackgroundColor() {
@@ -116,6 +132,73 @@ class Game {
 		document.querySelector('html').style.backgroundColor = color
 	}
 
+	changeScaleMode() {
+		if (this.settings.playInModes) {
+			// random new scale
+			const fromScales = ScaleType.names()
+			this.settings.scaleMode = "major pentatonic" //randomListItem(fromScales)
+			this.settings.modeKey = "C" //randomListItem(this.settings.chordRoots)
+			const scale = Scale.get(`${this.settings.modeKey} ${this.settings.scaleMode}`)
+
+			// update dom
+			const nameText = document.createElement('div');
+			nameText.textContent = scale.name
+			nameText.classList.add('scaleModeInfoText')
+			const colorDiv = ((notes, colors) => {
+				const paletteEl = document.createElement('div');
+				paletteEl.classList.add('notesPalette')
+
+				for (let n=0; n<notes.length; n++) {
+					const note = notes[n]
+					const color = colors[Note.enharmonic(note).toLowerCase()]
+					//const isHit = this.notesShot.map(n => Note.get(n).chroma).includes(Note.get(note).chroma)
+
+					let noteEl = document.createElement('div');
+					noteEl.classList.add('paletteEl')
+					noteEl.style.backgroundColor = color
+
+					paletteEl.appendChild(noteEl)			
+				}
+				return paletteEl
+			})(scale.notes, colors)
+
+
+			while (this.els.scaleModeInfo.firstChild) { // clear existing
+				this.els.scaleModeInfo.firstChild.remove()
+			}
+			this.els.scaleModeInfo.appendChild(nameText)
+			this.els.scaleModeInfo.appendChild(colorDiv)
+
+			// play drone sound 
+			// drone bass note 
+			// and arpeggiate scale
+			
+			clearTimeout(this.playInstrumentsProcess)
+			this.instruments = [this.piano.getRandomInstrument(), this.piano.getRandomInstrument()]
+			
+			const durInterval = 3000
+			this.playInstrumentsProcess = setInterval(() => {
+				// play bass note
+				const bassOctave = 2
+				this.instruments[0].triggerAttack(Note.enharmonic(this.settings.modeKey)+bassOctave, Tone.now())
+				this.instruments[0].triggerRelease(Note.enharmonic(this.settings.modeKey)+bassOctave, Tone.now() + durInterval)
+				
+				// play scale
+				// pick direction
+				const scaleOctave = 4
+				const notesToPlay = Math.random > 0.5 ? scale.notes : scale.notes.reverse()
+				for (let i=0; i< scale.notes.length; i++) {
+					const dur = durInterval /1000 / scale.notes.length
+
+					this.instruments[1].triggerAttack(Note.enharmonic(notesToPlay[i])+scaleOctave, Tone.now()+ dur*i)
+					this.instruments[1].triggerRelease(Note.enharmonic(notesToPlay[i])+scaleOctave, Tone.now() + dur*i + dur)
+				}
+
+			}, durInterval) 
+			
+
+		}
+	}
 
 	drawHearts() {
 		// update display
@@ -206,6 +289,8 @@ class Game {
 
 		this.hearts = this.heartsStart
 		this.drawHearts()
+
+		this.changeScaleMode()
 
 		this.level++;
 		this.els.level.textContent = this.level;

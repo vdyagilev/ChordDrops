@@ -195,37 +195,41 @@ option {
 	left: 10px;
 }
 
+.scaleModeInfo {
+	position: absolute;
+	margin-left: auto;
+	margin-right: auto;
+	top: 50px;
+	left: calc(50% - 200px);
+	text-align: center;
+	flex-direction: column;
+}
+
+.scaleModeInfoText {
+	padding: 20px 0;
+	font-size: 32px;
+}
+
 .targets {
 	position: absolute;
 }
 
 .target {
-	height: 70px;
-	width: 70px;
 	text-align: center;
-	background-color:#f3f9ff;
-	border-width: 2px;
-	border-color: #333;
+	background-color:rgb(240, 240, 240, 0.7);
 	font-family: monospace;
 	border-radius: 50%;
-	height: 70px;
 	display: grid;
 	justify-content: center;
 	align-content: center;
 	position: absolute;
 	z-index:1000;
 	padding: 15px;
-	
-
 }
 
 
 .targetScoreDiv {
-	width: calc(var(--numCols) * 50px + 200px) ;
-	background-color: white;
-	position: absolute;
-	margin-top: 125px;
-	box-shadow: 7px 7px 30px;
+	width: calc(var(--numCols) * 30px + 150px) ;
 }
 
 .targetNotesPalette {
@@ -236,6 +240,16 @@ option {
 .targetPaletteEl {
 	height: 50px;
 	width: 50px;
+}
+
+.notesPalette {
+	display: flex;
+	flex-direction: row;
+}
+
+.paletteEl {
+	height: 60px;
+	width: 60px;
 }
 
 .target__root {

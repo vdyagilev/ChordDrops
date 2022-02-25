@@ -1,9 +1,9 @@
 import { Note, Key, ChordType, Chord, Scale, ScaleType } from '@tonaljs/tonal';
 import { renderAbc } from 'abcjs';
 import { shuffle } from 'lodash';
-import { notesListToABCStr } from '.';
+import { notesListToABCStr, randomListItem } from '.';
 
-const colors = {
+export const colors = {
 	"a": "#e23232",
 	"bbb": "#e23232",
 	"a#": "#5ca3ff",
@@ -47,52 +47,130 @@ const complexityFilter = {
 	hard: (c) => c,
 };
 
-const getChordTarget = ({
-	chordLength = 3,
-	chordComplexity = 'simple',
-	chordRoots = ['C'],
-} = {}) => {
-	const randomNote = chordRoots[Math.floor(Math.random() * chordRoots.length)];
-	const validChordTypes = ChordType.all()
-		.filter(complexityFilter[chordComplexity])
-		.filter((c) => c.intervals.length <= parseInt(chordLength))
-		.map((c) => c.aliases[0])
-		.filter(c => !blacklist.includes(c))
-
-
-	const randomType =
-		validChordTypes[Math.floor(Math.random() * validChordTypes.length)];
-
-	return {
-		root: randomNote,
-		quality: randomType,
-	};
-};
-
-const getScaleTarget = ({
-	chordRoots = ['C'],
-} = {}) => {
-	const randomNote = chordRoots[Math.floor(Math.random() * chordRoots.length)];
-
-	const validScaleTypes = ScaleType.all()
-
-	const randomScale =
-		validScaleTypes[Math.floor(Math.random() * validScaleTypes.length)];
-
-	return {
-		root: randomNote,
-		scale: randomScale.name,
-	};
-};
-
-function randomListItem(items) {
-	return items[Math.floor(Math.random()*items.length)];
+export function listInList(a, b) {
+	// Return true if all elements of a are in b, false otherwise
+	for (let i=0; i<a.length; i++) {
+		if (!b.includes(a[i])) {
+			return false
+		}
+	}
+	return true
 }
+
+function notesInNotesChroma(a, b) {
+	return listInList(
+		a.map(n => Note.get(n).chroma),
+		b.map(n => Note.get(n).chroma)
+	)
+}
+
+// random targets
+const getChordTarget = (settings) => {
+
+	const scale = Scale.get(`${settings.modeKey} ${settings.scaleMode}`)
+
+	let randomNote
+	let validChordTypes
+
+
+	if (settings.playInModes) {
+		const scaleChordTypes = Scale.scaleChords(`${settings.scaleMode}`) 
+		const potentialChords =  (() =>{
+			let l = []
+			for (let i=0; i< scaleChordTypes.length; i++) {
+				for (let j=0; j < scale.notes.length; j++) {
+					l.push(Chord.get(`${scale.notes[j]} ${scaleChordTypes[i]}`))		
+				}
+			}
+			return l
+		})()
+
+
+		validChordTypes = potentialChords
+			.filter(c => notesInNotesChroma(c.notes, scale.notes) )
+			.filter(complexityFilter[settings.chordComplexity])
+			.filter((c) => c.intervals.length <= parseInt(settings.chordLength))
+			// .map((c) => c.aliases[0])
+			// .filter(c => !blacklist.includes(c))
+
+		const chosenChord = randomListItem(validChordTypes)
+		
+
+		return {
+			root: chosenChord.tonic,
+			quality: chosenChord.aliases[0],
+		}
+	}
+
+	else {
+		randomNote = randomListItem(settings.chordRoots);
+		validChordTypes = ChordType.all() 
+
+
+		validChordTypes = validChordTypes
+			.filter(complexityFilter[settings.chordComplexity])
+			.filter((c) => c.intervals.length <= parseInt(settings.chordLength))
+			.map((c) => c.aliases[0])
+			.filter(c => !blacklist.includes(c))
+
+		const randomType = randomListItem(validChordTypes)
+
+		return {
+			root: randomNote,
+			quality: randomType,
+		};
+	}
+};
+
+const getScaleTarget = (settings) => {
+	let randomNote
+	let randomScale
+	
+	if (settings.playInModes) {
+		randomNote = settings.modeKey
+		randomScale = settings.scaleMode 
+	}
+	else {
+		randomNote = randomListItem(settings.chordRoots);
+		const validScaleTypes = ScaleType.all()
+
+		randomScale = randomListItem(validScaleTypes).name;
+	}
+
+
+	return {
+		root: randomNote,
+		scale: randomScale,
+	};
+};
+
 
 export default class Target {
 	static all = []
 
 	static targetsEl = document.querySelector('.targets');
+
+	constructor(type, root, quality, speed, onFall, colorProbability, notes) {
+		this.root = root;
+		this.quality = quality;
+		this.target = root + quality;
+		this.speed = speed;
+		this.colorProbability = colorProbability
+
+		// allows Target to be type: "chord", "arpeggio", or "scale"
+		this.type = type
+		this.notes = notes
+		this.notesShot = []
+
+		if (this.type == TARGET_TYPE_CHORD) {
+			this.renderChord();
+		} else {
+			this.renderNotes()
+		}
+		
+		this.invaded = this.animation.finished;
+	}
+
 
 	static create(settings) {
 		// create random target from game modes
@@ -108,15 +186,12 @@ export default class Target {
 		} else if (mode === TARGET_TYPE_ARPEGGIO) {
 			return this.createArpeggio(settings)
 		}
+
 	}
 
 	static createChord(settings) {
 		const { root, quality } = getChordTarget(settings);
 
-		const existing = Target.all.filter(t => t.target == root + quality);
-		if (existing.length > 0) {
-			return;
-		}
 		let notes = Chord.get(root + quality).notes
 
 		const newTarget = new Target(TARGET_TYPE_CHORD, root, quality, settings.speed, 
@@ -130,10 +205,6 @@ export default class Target {
 	static createArpeggio(settings) {
 		const { root, quality } = getChordTarget(settings);
 
-		const existing = Target.all.filter(t => t.target == root + quality);
-		if (existing.length > 0) {
-			return;
-		}
 
 		let notes = Chord.get(root + quality).notes
 
@@ -147,10 +218,6 @@ export default class Target {
 
 	static createScale(settings) {
 		const { root, scale } = getScaleTarget(settings);
-		const existing = Target.all.filter(t => t.target == scale);
-		if (existing.length > 0) {
-			return;
-		}
 
 		let notes = Scale.get(root + " "  + scale).notes
 
@@ -175,23 +242,6 @@ export default class Target {
 	static shootNotes(notes) {
 		const target = Target.all[0]
 
-		function listInList(a, b) {
-			// Return true if all elements of a are in b, false otherwise
-			for (let i=0; i<a.length; i++) {
-				if (!b.includes(a[i])) {
-					return false
-				}
-			}
-			return true
-		}
-
-		function notesInNotesChroma(a, b) {
-			return listInList(
-				a.map(n => Note.get(n).chroma),
-				b.map(n => Note.get(n).chroma)
-			)
-		}
-
 		if (target && (target.type == TARGET_TYPE_ARPEGGIO || target.type == TARGET_TYPE_SCALE)) {
 			target.notesShot = target.notesShot.concat(notes)
 
@@ -204,6 +254,10 @@ export default class Target {
 		return false;
 	}
 
+	remove() {
+		this.el.parentElement.removeChild(this.el);
+		Target.all.splice(Target.all.findIndex(t => t.target === this.target), 1)
+	}
 
 	static clear() {
 		for (let target of Target.all) {
@@ -212,31 +266,8 @@ export default class Target {
 		}
 	}
 
-	constructor(type, root, quality, speed, onFall, colorProbability, notes) {
-		this.root = root;
-		this.quality = quality;
-		this.target = root + quality;
-		this.speed = speed;
-		this.colorProbability = colorProbability
-
-		// allows Target to be type: "chord", "arpeggio", or "scale"
-		this.type = type
-		this.notes = notes
-		this.notesShot = []
-
-		if (this.type == TARGET_TYPE_CHORD) {
-			this.renderChord();
-		} else {
-			this.renderNotes()
-		}
-		
-		this.invaded = this.animation.finished;
-	}
-
-	remove() {
-		this.el.parentElement.removeChild(this.el);
-		Target.all = Target.all.filter(t => t.target != this.target);
-	}
+	
+	
 
 	async renderChord() {
 		const targetEl = document.createElement('div');
@@ -271,7 +302,7 @@ export default class Target {
 		const tonic = Chord.get(this.target).tonic
 		const keyEnharnomic = Note.enharmonic(tonic).toLowerCase();
 
-		targetEl.style.backgroundColor = colors[keyEnharnomic]
+		
 		// font color
 		function hex_is_light(color) {
 			const hex = color.replace('#', '');
@@ -281,16 +312,14 @@ export default class Target {
 			const brightness = ((c_r * 299) + (c_g * 587) + (c_b * 114)) / 1000;
 			return brightness > 155;
 		}
-		if (hex_is_light(colors[keyEnharnomic])) {
-			targetEl.style.color = "#2c3e50"
-		} else {
-			targetEl.style.color = "#ecf0f1"
-		}
+		
 
 		let notes = Chord.get(this.target).notes
 		
 		// // shuffle notes in chord to get random inversion
-		// notes = shuffle(notes) 
+		notes = shuffle(notes) 
+
+	
 
 		// 50% chance to draw as colors/ 50% chance as score
 		if (Math.random() > 0.5) {
@@ -298,6 +327,13 @@ export default class Target {
 			notes = notes.filter(n => n != tonic)
 			// draw as colors
 			if (Math.random() < this.colorProbability) { 
+				if (hex_is_light(colors[keyEnharnomic])) {
+					targetEl.style.color = "#2c3e50"
+				} else {
+					targetEl.style.color = "#ecf0f1"
+				}
+				targetEl.style.backgroundColor = colors[keyEnharnomic]
+
 				// add a colored border for every non-root note in chord
 				let boxShadow = ""
 				
@@ -310,6 +346,11 @@ export default class Target {
 
 				// boxShadow = boxShadow.slice(0, boxShadow.length-2)
 				targetEl.style.boxShadow = boxShadow
+
+				targetEl.style.borderColor = "rgb(0, 0, 0, 0)" // clear border
+				targetEl.style.height = "70px"
+				targetEl.style.width = "70px"
+			
 			}
 			else {
 				targetEl.style.boxShadow = 	`0 0 0 ${3}px ${'rgb(0, 0, 0, 0.5)'}`
@@ -317,6 +358,7 @@ export default class Target {
 		} else {
 			let scoreDiv = document.createElement('div')
 			scoreDiv.classList.add('targetScoreDiv')
+
 
 			// draw as score
 			var abcString = `X:1\nK:${ Math.random() < 0.33 ? 'C' : Math.random() < 0.33 ? 'clef=bass' : 'clef=alto'}\n[${notesListToABCStr(notes)}]|\n`;
@@ -330,6 +372,9 @@ export default class Target {
 			});
 
 			targetEl.appendChild(scoreDiv)
+			
+			targetEl.style.border = 'medium solid blue'
+			targetEl.style.height = targetEl.style.width
 		}
 
 		
@@ -345,7 +390,7 @@ export default class Target {
 		targetEl.classList.add('target');
 		targetEl.style.left =
 			Math.floor(
-				Math.random() * (document.body.offsetWidth - targetEl.clientWidth - 650)
+				Math.random() * (document.body.offsetWidth - targetEl.clientWidth - 850)
 			) + 300 + 'px';
 		Target.targetsEl.appendChild(targetEl);
 		this.animation = targetEl.animate(
@@ -369,7 +414,13 @@ export default class Target {
 		targetEl.style.padding = '20px 50px'
 			
 		let notes = this.notes;
+
+		if (Math.random() > 0.5) {
+			notes = notes.reverse(); 
+		}
 		
+		notes = shuffle(notes)
+
 		// 50% chance to draw as colors and 50% as music score
 		if (Math.random () < 0.5) {
 
@@ -389,13 +440,14 @@ export default class Target {
 
 					paletteEl.appendChild(noteEl)			
 				}
-				
+				targetEl.style.border = 'medium dashed blue'
+
 				targetEl.appendChild(paletteEl)
 			}
 		} else {
 			let scoreDiv = document.createElement('div')
 			scoreDiv.classList.add('targetScoreDiv')
-
+			
 			// draw as score
 			var abcString = `X:1\nK:${ Math.random() < 0.33 ? 'C' : Math.random() < 0.33 ? 'clef=bass' : 'clef=alto'}\n${notesListToABCStr(notes)}|\n`;
 
@@ -404,10 +456,11 @@ export default class Target {
 
 			renderAbc(scoreDiv, abcString, {
 				add_classes: true, // add css classes to all elements
-				scale: 1.5,
+				scale: 1.0,
 			});
 
 			targetEl.appendChild(scoreDiv)
+			targetEl.style.border = 'medium dashed purple'
 		}
 
 	}

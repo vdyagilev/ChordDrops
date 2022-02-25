@@ -65,7 +65,7 @@
 			<br/>
 
 			<label for="chord-pace">Slowness</label>
-			<input type="range" min="1000" max="40000" value="20000" class="slider" id="chord-pace"/>
+			<input type="range" min="1000" max="80000" value="20000" class="slider" id="chord-pace"/>
 
 			<label for="inversions">Inversions</label>
 			<select name="inversions" id="inversions" >
@@ -76,8 +76,11 @@
 			<label for="color-prob">Color Probability %</label>
 			<input type="range" min="0" max="100" value="50" class="slider" id="color-prob">
 
-			<label for="color-prob">Hearts</label>
+			<label for="hearts-checkbox">Hearts</label>
 			<input type="checkbox" class="checkbox" id="hearts-checkbox"/>
+
+			<label for="modes-checkbox">Play in Modes</label>
+			<input type="checkbox" class="checkbox" id="modes-checkbox"/>
 
 		</form>
 		<button class="start-game">Start</button>
@@ -104,6 +107,8 @@
 		<div class="currentChord"></div>
 
 		<div class="musicScore"></div>
+
+		<div class="scaleModeInfo"></div>
 
 		<div class="piano">
 			<div class="piano__note" data-note="C" style="--key-color: #e3e3e3;"></div>
