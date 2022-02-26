@@ -35,7 +35,7 @@ export const colors = {
 }
 
 // avoid these chords
-const blacklist = ['b9sus', '69#11']
+const blacklist = ['b9sus', '69#11', 'iwato']
 
 const TARGET_TYPE_CHORD = "chord"
 const TARGET_TYPE_SCALE = "scale"
@@ -133,8 +133,10 @@ const getScaleTarget = (settings) => {
 	else {
 		randomNote = randomListItem(settings.chordRoots);
 		const validScaleTypes = ScaleType.all()
+			.map(s => s.name)
+			.filter(c => !blacklist.includes(c))
 
-		randomScale = randomListItem(validScaleTypes).name;
+		randomScale = randomListItem(validScaleTypes);
 	}
 
 
@@ -151,6 +153,7 @@ export default class Target {
 	static targetsEl = document.querySelector('.targets');
 
 	constructor(type, root, quality, speed, onFall, colorProbability, notes) {
+		this._id = Date.now()
 		this.root = root;
 		this.quality = quality;
 		this.target = root + quality;
@@ -255,14 +258,19 @@ export default class Target {
 
 	remove() {
 		this.el.parentElement.removeChild(this.el);
-		Target.all.splice(Target.all.findIndex(t => t.target === this.target), 1)
+		Target.all = Target.all.filter(t => t._id !== this._id)
 	}
 
 	static clear() {
-		for (let target of Target.all) {
+		
+		for (let i=0 ;i<Target.all.length; i++) {
+			const target = Target.all[i]
 			target.animation.cancel();
-			target.remove();
+			// target.remove();
+			target.el.parentElement.removeChild(target.el);
 		}
+		Target.all = []
+		
 	}
 
 	

@@ -180,17 +180,17 @@ class Game {
 			this.playInstrumentsProcess = setInterval(() => {
 				// play bass note
 				const bassOctave = randomListItem([1, 2])
-				this.instruments[0].triggerAttack(Note.enharmonic(this.settings.modeKey)+bassOctave, Tone.now())
-				this.instruments[0].triggerRelease(Note.enharmonic(this.settings.modeKey)+bassOctave, Tone.now() + durInterval)
+				this.instruments[0].triggerAttack(Note.enharmonic(this.settings.modeKey)+bassOctave, Tone.now(), 0.7)
+				this.instruments[0].triggerRelease(Note.enharmonic(this.settings.modeKey)+bassOctave, Tone.now() + durInterval/1000)
 				
 				// play scale
 				// pick direction
-				const scaleOctave = randomListItem([3, 4, 5, 6])
-				const notesToPlay = Math.random > 0.5 ? scale.notes : [].concat(scale.notes).reverse()
+				const scaleOctave = randomListItem([3, 4, 5])
+				const notesToPlay = Math.random() > 0.5 ? scale.notes : [].concat(scale.notes).reverse()
 				for (let i=0; i< scale.notes.length; i++) {
 					const dur = durInterval / 1000 / scale.notes.length
 
-					this.instruments[1].triggerAttack(Note.enharmonic(notesToPlay[i])+scaleOctave, Tone.now()+ dur*i)
+					this.instruments[1].triggerAttack(Note.enharmonic(notesToPlay[i])+scaleOctave, Tone.now()+ dur*i, 0.4)
 					this.instruments[1].triggerRelease(Note.enharmonic(notesToPlay[i])+scaleOctave, Tone.now() + dur*i + dur)
 				}
 
@@ -285,6 +285,8 @@ class Game {
 	}
 
 	incrementLevel() {
+		Target.clear()
+		
 		this.gameSounds.levelup.start()
 		this.changeBackgroundColor()
 
@@ -292,6 +294,8 @@ class Game {
 		this.drawHearts()
 
 		this.changeScaleMode()
+
+		
 
 		this.level++;
 		this.els.level.textContent = this.level;
