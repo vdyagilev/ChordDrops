@@ -1,7 +1,7 @@
 import { Note, Key, ChordType, Chord, Scale, ScaleType } from '@tonaljs/tonal';
 import { renderAbc } from 'abcjs';
 import { shuffle } from 'lodash';
-import { notesListToABCStr, randomListItem } from '.';
+import { abcFormatNotes, notesListToABCStr, randomListItem } from '.';
 
 export const colors = {
 	"a": "#e23232",
@@ -35,7 +35,7 @@ export const colors = {
 }
 
 // avoid these chords
-const blacklist = ['b9sus', '69#11', 'iwato']
+const blacklist = ['b9sus', '69#11',]
 
 const TARGET_TYPE_CHORD = "chord"
 const TARGET_TYPE_SCALE = "scale"
@@ -368,8 +368,8 @@ export default class Target {
 
 
 			// draw as score
-			var abcString = `X:1\nK:${ Math.random() < 0.33 ? 'C' : Math.random() < 0.33 ? 'clef=bass' : 'clef=alto'}\n[${notesListToABCStr(notes)}]|\n`;
-
+			const abcString = abcFormatNotes(notes, false)
+			
 			// add num of cols as parameter to css
 			scoreDiv.style +=`;--numCols: ${1};`
 
@@ -455,9 +455,8 @@ export default class Target {
 			let scoreDiv = document.createElement('div')
 			scoreDiv.classList.add('targetScoreDiv')
 			
-			// draw as score
-			var abcString = `X:1\nK:${ Math.random() < 0.33 ? 'C' : Math.random() < 0.33 ? 'clef=bass' : 'clef=alto'}\n${notesListToABCStr(notes)}|\n`;
-
+			const abcString = abcFormatNotes(notes, true)
+			
 			// add num of cols as parameter to css
 			scoreDiv.style +=`;--numCols: ${notes.length};`
 

@@ -30,6 +30,8 @@ export default class Piano {
 		this.samples = samples
 		this.instrumentCurrent = this.getRandomInstrument()
 
+		// play on note hit
+		this.playSound = true
 	}
 
 	start() {
@@ -64,10 +66,13 @@ export default class Piano {
 
 		// play through instrument
 		Tone.Buffer.loaded().then(() => {
-			this.instrumentCurrent.triggerAttack(noteName, Tone.now());
+			if (this.playSound) {
+				this.instrumentCurrent.triggerAttack(noteName, Tone.now());
+			}
 		})
-
-		// this.synth.triggerAttack(noteName, Tone.now());
+		
+			//this.synth.triggerAttack(noteName, Tone.now());
+		
 
 		this.display
 			.querySelector(`[data-note="${noteClass}"]`)
@@ -86,7 +91,10 @@ export default class Piano {
 		// stop all sounds
 		for (let i=0; i<this.instruments.length; i++) {
 			const inst = this.instruments[i]
-			this.samples[inst].triggerRelease(noteName, Tone.now());
+			
+			if (this.playSound) {
+				this.samples[inst].triggerRelease(noteName, Tone.now());
+			}
 		}
 			// this.synth.triggerRelease(noteName, Tone.now());
 
